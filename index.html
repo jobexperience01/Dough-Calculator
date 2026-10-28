@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07110e">
+<title>Dough Calculator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{color-scheme:dark light;--bg:#07110e;--s1:#0e1c18;--s2:#142a24;--line:rgba(170,235,210,.1);--tx:#ecf5f0;--mu:#84a095;--brand:#f4b942;--on:#1b1204;--pan:#ff8f4e;--hc:#34d9a0;--crit:#ff5d6c;--warn:#f4b942;--ok:#34d9a0;--acc:var(--pan);--ease:cubic-bezier(.2,.8,.2,1)}
+@media(prefers-color-scheme:light){:root{--bg:#eef4f1;--s1:#fff;--s2:#e4eee9;--line:rgba(10,40,30,.1);--tx:#0b1f18;--mu:#55736a;--brand:#e9a21b;--pan:#d9602a;--hc:#0e9f72;--crit:#e23b4e;--warn:#c98a06;--ok:#0e9f72}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body::before{content:"";position:fixed;inset:0 0 auto 0;height:380px;background:radial-gradient(80% 70% at 100% 0%,color-mix(in srgb,var(--brand) 16%,transparent),transparent 70%),radial-gradient(75% 70% at 0% 8%,color-mix(in srgb,var(--hc) 15%,transparent),transparent 70%);pointer-events:none;z-index:-1}
+body{font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.35;padding:calc(env(safe-area-inset-top,0px) + 20px) 16px calc(env(safe-area-inset-bottom,0px) + 112px);max-width:560px;margin:0 auto;-webkit-font-smoothing:antialiased}
+body.lock{overflow:hidden}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+h1{font-size:2.15rem;font-weight:750;letter-spacing:-.035em;line-height:1}
+.date{color:var(--mu);font-size:.9rem;margin-top:6px}
+.icon-btn{width:46px;height:46px;border-radius:50%;background:var(--s1);border:1px solid var(--line);display:grid;place-items:center;transition:transform .15s var(--ease)}
+.icon-btn:active{transform:scale(.92)}
+.icon-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:var(--s1);border:1px solid var(--line);border-radius:18px;padding:4px;margin-bottom:16px}
+.seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:14px;background:var(--s2);transition:transform .35s var(--ease)}
+.seg[data-a=hc] .thumb{transform:translateX(100%)}
+.seg button{position:relative;padding:12px 8px;font-weight:650;font-size:.97rem;color:var(--mu);transition:color .2s}
+.seg button[aria-selected=true]{color:var(--tx)}
+.seg button.dot::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-left:8px;vertical-align:middle}
+.seg button[data-t=pan]{--c:var(--pan)}.seg button[data-t=hc]{--c:var(--hc)}
+.panel[hidden]{display:none}
+.panel.pan{--acc:var(--pan)}.panel.hc{--acc:var(--hc)}
+.size{background:var(--s1);border:1px solid var(--line);border-radius:22px;padding:14px;margin-bottom:10px}
+.size-name{font-weight:650;font-size:1rem;margin-bottom:10px;letter-spacing:-.01em}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld label{display:block;font-size:.78rem;color:var(--mu);margin:0 0 5px 4px}
+.step{display:flex;align-items:center;background:var(--s2);border:1.5px solid transparent;border-radius:16px;transition:border-color .2s,background .2s}
+.fld.has .step{border-color:color-mix(in srgb,var(--acc) 55%,transparent);background:color-mix(in srgb,var(--acc) 10%,var(--s2))}
+.step:focus-within{border-color:var(--acc)}
+.sb{width:42px;height:48px;font-size:1.4rem;font-weight:500;color:var(--mu);flex:none;border-radius:16px;transition:transform .12s,color .15s}
+.sb:active{transform:scale(.85);color:var(--acc)}
+.step input{flex:1;min-width:0;width:100%;text-align:center;font:inherit;font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--tx);background:none;border:0;outline:0;-moz-appearance:textfield;padding:0}
+.step input::placeholder{color:var(--mu);opacity:.5}
+.step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.bar-wrap{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:28px 16px calc(env(safe-area-inset-bottom,0px) + 14px);background:linear-gradient(to top,var(--bg) 55%,transparent)}
+.bar{max-width:560px;margin:0 auto;display:flex;gap:10px}
+.btn{height:56px;border-radius:18px;font-weight:700;font-size:1.05rem;transition:transform .12s var(--ease)}
+.btn:active{transform:scale(.97)}
+.btn.primary{flex:1;background:linear-gradient(180deg,color-mix(in srgb,var(--brand) 82%,#fff),var(--brand) 55%,color-mix(in srgb,var(--brand) 82%,var(--pan)));color:var(--on);box-shadow:0 10px 26px color-mix(in srgb,var(--brand) 32%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn.ghost{padding:0 16px;background:var(--s1);border:1px solid var(--line);color:var(--mu)}
+.sheet{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);visibility:hidden;transition:transform .42s var(--ease),visibility 0s .42s}
+.sheet.open{transform:none;visibility:visible;transition:transform .42s var(--ease)}
+.sheet-head{display:flex;align-items:center;gap:14px;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 10px;max-width:560px;width:100%;margin:0 auto}
+.back{display:flex;align-items:center;gap:2px;height:44px;padding:0 16px 0 8px;border-radius:99px;background:var(--s1);border:1px solid var(--line);font-weight:650;font-size:.95rem;transition:transform .15s var(--ease)}
+.back:active{transform:scale(.94)}
+.back svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,color-mix(in srgb,var(--brand) 90%,#fff),color-mix(in srgb,var(--brand) 60%,#000));display:grid;place-items:center;box-shadow:0 6px 16px color-mix(in srgb,var(--brand) 35%,transparent)}
+.logo svg{width:24px;height:24px;stroke:var(--on);fill:none;stroke-width:1.8;stroke-linecap:round}
+.brand{display:flex;align-items:center;gap:12px}
+.sheet-head h2{font-size:1.4rem;font-weight:750;letter-spacing:-.03em}
+.sheet-body{flex:1;overflow-y:auto;padding:4px 16px 120px;max-width:560px;width:100%;margin:0 auto;overscroll-behavior:contain}
+.sheet-foot{display:none;position:absolute;left:0;right:0;bottom:0;padding:28px 16px calc(env(safe-area-inset-bottom,0px) + 14px);background:linear-gradient(to top,var(--bg) 55%,transparent)}
+.sheet[data-mode=results] .sheet-foot{display:flex;gap:10px;padding-inline:max(16px,calc((100% - 528px)/2))}
+.sheet-foot .btn{white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:10px}
+.sheet-foot .btn.primary{flex:1}
+.sheet-foot .icon-btn{width:56px;height:56px;flex:none;border-radius:18px}
+.sheet-foot svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.type{--acc:var(--pan);margin-bottom:34px}.type.hc{--acc:var(--hc)}
+.type>h2{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:700;margin:14px 0 12px}
+.type>h2 i{width:10px;height:10px;border-radius:50%;background:var(--acc)}
+.hero{border-radius:30px;padding:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 26%,var(--s1)),var(--s1) 70%);border:1px solid color-mix(in srgb,var(--acc) 30%,transparent);margin-bottom:12px}
+.hero-k{color:var(--mu);font-size:.85rem}
+.hero-v{font-size:3.3rem;font-weight:780;letter-spacing:-.045em;line-height:1.05;font-variant-numeric:tabular-nums;margin:2px 0 4px}
+.hero-v small{font-size:1.2rem;font-weight:600;color:var(--mu);letter-spacing:0}
+.hero-s{font-size:.95rem}
+.target{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;padding:12px 14px;border-radius:16px;background:rgba(127,127,127,.14)}
+.target b{display:block;font-size:.95rem}.target span{font-size:.82rem;color:var(--mu)}
+.target em{font-style:normal;font-weight:700;font-size:.88rem;color:var(--acc);text-align:right}
+.items{display:grid;gap:10px}
+.item{background:var(--s1);border:1px solid var(--line);border-radius:22px;padding:14px 16px}
+.item-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.nm{font-weight:650}
+.sub{display:flex;gap:12px;font-size:.82rem;color:var(--mu);margin-top:2px}
+.make{text-align:right;line-height:1}
+.make b{font-size:2rem;font-weight:780;letter-spacing:-.03em;color:var(--acc);font-variant-numeric:tabular-nums}
+.make span{display:block;font-size:.72rem;color:var(--mu);margin-top:3px}
+.meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap}
+.pill{font-size:.8rem;font-weight:650;padding:6px 11px;border-radius:99px;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc)}
+.pill.near{background:rgba(255,200,60,.16);color:#e8a900}
+.g{font-size:.85rem;color:var(--mu);font-variant-numeric:tabular-nums}
+.opt{font-size:.82rem;color:var(--mu);margin-top:8px}
+.tip{font-size:.82rem;margin-top:8px;padding:9px 12px;border-radius:12px;background:rgba(255,160,60,.12);color:#e08a1e}
+.seq{margin-top:22px}
+.seq h3{font-size:1.05rem;font-weight:700}
+.hint{font-size:.82rem;color:var(--mu);margin:3px 0 12px}
+details{background:var(--s1);border:1px solid var(--line);border-radius:22px;padding:4px 14px 6px;margin-bottom:10px}
+summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-weight:650;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+summary em{font-style:normal;color:var(--mu);font-weight:500;font-size:.85rem}
+summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--mu);border-bottom:2px solid var(--mu);transform:rotate(45deg);margin-left:12px;transition:transform .25s var(--ease)}
+details[open] summary::after{transform:rotate(-135deg)}
+summary{gap:0}
+.batch{background:var(--s2);border-radius:18px;padding:12px;margin-bottom:8px}
+.bh{display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:9px}
+.bh span{color:var(--mu);font-size:.8rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:baseline;gap:6px;background:var(--s1);border-radius:99px;padding:6px 12px;font-size:.84rem;color:var(--mu)}
+.chip b{color:var(--tx);font-size:.9rem}
+.bar2{height:5px;border-radius:9px;background:rgba(127,127,127,.2);margin-top:11px;overflow:hidden}
+.bar2 i{display:block;height:100%;border-radius:9px;background:var(--acc)}
+.grand{display:flex;justify-content:space-between;align-items:baseline;padding:4px 6px 0;color:var(--mu)}
+.grand b{font-size:1.6rem;color:var(--tx);letter-spacing:-.03em}
+.hist{display:grid;gap:10px}
+.hist-row{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;width:100%;background:var(--s1);border:1px solid var(--line);border-radius:22px;padding:16px;transition:transform .12s}
+.hist-row:active{transform:scale(.98)}
+.hist-row b{display:block}.hist-row span{font-size:.8rem;color:var(--mu)}
+.hist-tot{display:grid;gap:3px;text-align:right}
+.hist-tot em{font-style:normal;font-size:.85rem;font-weight:650;font-variant-numeric:tabular-nums}
+.hist-tot .pan{color:var(--pan)}.hist-tot .hc{color:var(--hc)}
+.empty{text-align:center;padding:60px 20px;color:var(--mu)}.empty b{display:block;color:var(--tx);font-size:1.1rem;margin-bottom:6px}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 98px);z-index:30;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--tx);color:var(--bg);padding:11px 18px;border-radius:99px;font-weight:650;font-size:.9rem;transition:all .3s var(--ease);white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+
+.size,.item,details,.hist-row,.board{box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.fld.lowc .step{border-color:color-mix(in srgb,var(--crit) 65%,transparent);background:color-mix(in srgb,var(--crit) 12%,var(--s2))}
+.fld.loww .step{border-color:color-mix(in srgb,var(--warn) 65%,transparent);background:color-mix(in srgb,var(--warn) 11%,var(--s2))}
+.live{max-width:560px;margin:0 auto 10px;display:flex;gap:8px;overflow-x:auto;opacity:0;transform:translateY(8px);pointer-events:none;transition:all .3s var(--ease);height:0}
+.live.on{opacity:1;transform:none;height:auto}
+.live span{display:inline-flex;align-items:baseline;gap:6px;padding:8px 14px;border-radius:99px;background:color-mix(in srgb,var(--s1) 88%,transparent);backdrop-filter:blur(14px);border:1px solid var(--line);font-size:.82rem;color:var(--mu);white-space:nowrap}
+.live span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c);align-self:center}
+.live b{color:var(--tx);font-size:.95rem}
+.tanks{display:flex;gap:8px;margin-top:16px}
+.tank{flex:1;min-width:0;height:34px;border-radius:12px;background:rgba(127,127,127,.18);position:relative;overflow:hidden}
+.tank i{position:absolute;inset:0 auto 0 0;width:var(--f);background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 70%,#000),var(--acc));border-radius:12px;animation:fillIn 1s var(--ease) both}
+.tank span{position:absolute;inset:0;display:grid;place-items:center;font-size:.78rem;font-weight:750;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+@keyframes fillIn{from{width:0}}
+.board{background:var(--s1);border:1px solid var(--line);border-radius:28px;padding:18px 16px 14px;margin:12px 0 4px}
+.board-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.stage-t{font-size:1.2rem;font-weight:760;letter-spacing:-.025em}
+.stage-s{font-size:.84rem;color:var(--mu);margin-top:3px;max-width:230px}
+.play{display:flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 11px;border-radius:99px;background:var(--s2);font-weight:650;font-size:.85rem;flex:none}
+.play svg{width:16px;height:16px;fill:currentColor}
+.scale{display:grid;grid-template-columns:1fr 38px;margin-bottom:6px}
+.scale div{position:relative;height:16px}
+.scale span{position:absolute;transform:translateX(-50%);font-size:.7rem;font-weight:700;font-variant-numeric:tabular-nums}
+.scale .s10{color:var(--crit)}.scale .s20{color:var(--warn)}
+.prows{position:relative}
+.prow{position:absolute;left:0;right:0;height:56px;transition:transform .7s var(--ease)}
+.pt{display:flex;justify-content:space-between;align-items:center;height:24px}
+.pl{font-size:.88rem;font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb{font-size:.72rem;font-weight:750;padding:3px 10px;border-radius:99px;flex:none;margin-left:8px;transition:background .4s,color .4s;min-width:10px}
+.pm{display:grid;grid-template-columns:1fr 38px;align-items:center;gap:0}
+.ptrack{position:relative;height:12px;border-radius:9px;background:rgba(127,127,127,.18);overflow:hidden}
+.ptrack .fill{position:absolute;inset:0 auto 0 0;border-radius:9px;transition:width .8s var(--ease),background .5s;background:var(--zc)}
+.tick{position:absolute;top:0;bottom:0;width:2px;transform:translateX(-1px);z-index:1}
+.tick.a{background:var(--crit)}.tick.b{background:var(--warn)}
+.pv{text-align:right;font-weight:780;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.prow.z-c{--zc:var(--crit)}.prow.z-w{--zc:var(--warn)}.prow.z-ok{--zc:var(--ok)}
+.z-c .pb{background:color-mix(in srgb,var(--crit) 20%,transparent);color:var(--crit)}
+.z-w .pb{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.z-ok .pb{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.stagechips{display:flex;gap:6px;overflow-x:auto;margin:6px -2px 12px;padding:2px}
+.stagechips button{flex:none;padding:8px 14px;border-radius:99px;background:var(--s2);font-size:.82rem;font-weight:650;color:var(--mu);transition:all .25s}
+.stagechips button.on{background:var(--tx);color:var(--bg)}
+.nextmake{font-size:.84rem;color:var(--mu);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.nextmake b{color:var(--tx);margin-right:2px}
+.bhead{display:flex;justify-content:space-between;align-items:center}
+.bdone{width:30px;height:30px;border-radius:50%;border:2px solid var(--mu);display:grid;place-items:center;flex:none;transition:all .25s var(--ease)}
+.bdone svg{width:16px;height:16px;stroke:var(--on);stroke-width:3;fill:none;opacity:0;transform:scale(.4);transition:all .25s var(--ease)}
+.batch.done{opacity:.6}
+.batch.done .bdone{background:var(--ok);border-color:var(--ok)}
+.batch.done .bdone svg{opacity:1;transform:none}
+.bhead .bh{gap:12px;padding-right:12px}
+.bprog{font-size:.8rem;color:var(--mu);font-weight:600}
+
+.hdr-l{display:flex;align-items:center;gap:12px}
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .3s,visibility 0s .3s}
+.scrim.on{opacity:1;visibility:visible;transition:opacity .3s}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(86vw,340px);z-index:41;background:var(--s1);border-right:1px solid var(--line);transform:translateX(-102%);visibility:hidden;transition:transform .4s var(--ease),visibility 0s .4s;padding:calc(env(safe-area-inset-top,0px) + 22px) 14px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;flex-direction:column;overflow-y:auto}
+.drawer.on{transform:none;visibility:visible;transition:transform .4s var(--ease)}
+.drawer .brand{padding:0 8px 18px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.drawer h2{font-size:1.15rem;font-weight:750;letter-spacing:-.02em}
+.drawer .ver{font-size:.78rem;color:var(--mu)}
+.dnav{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px;border-radius:16px;font-weight:620;font-size:.98rem;color:var(--tx);transition:background .2s}
+.dnav:active,.dnav.on{background:var(--s2)}
+.dnav svg{width:22px;height:22px;stroke:var(--mu);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.dnav.on svg{stroke:var(--brand)}
+.dgrow{flex:1}
+.dby{background:var(--s2);border-radius:20px;padding:14px;text-align:left;width:100%}
+.dby small{display:block;color:var(--mu);font-size:.75rem}
+.dby b{display:block;margin-top:2px}
+.info{background:var(--s1);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.info h3{font-size:1.05rem;font-weight:720;margin-bottom:8px;letter-spacing:-.01em}
+.info p{font-size:.92rem;color:var(--mu);line-height:1.5;margin-bottom:10px}
+.info p:last-child{margin-bottom:0}
+.info p b,.info li b{color:var(--tx)}
+.info ul,.info ol{list-style:none;display:grid;gap:12px;margin-top:4px}
+.info li{font-size:.92rem;color:var(--mu);line-height:1.45;padding-left:30px;position:relative}
+.info ul li::before{content:"";position:absolute;left:4px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--brand)}
+.info ol{counter-reset:s}
+.info ol li{counter-increment:s}
+.info ol li::before{content:counter(s);position:absolute;left:0;top:-1px;width:22px;height:22px;border-radius:50%;background:var(--s2);color:var(--tx);font-size:.75rem;font-weight:750;display:grid;place-items:center}
+.who{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.who .logo{width:52px;height:52px;border-radius:16px;font-weight:800;font-size:1.1rem;color:var(--on)}
+.who b{display:block;font-size:1.15rem;letter-spacing:-.02em}
+.who span{color:var(--mu);font-size:.85rem}
+.crow{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.crow .chip{background:var(--s2)}.crow .chip b{color:var(--tx)}
+.clink{display:block;color:var(--tx);text-decoration:none;font-weight:620;font-size:.92rem;padding:12px 14px;border-radius:14px;background:var(--s2);margin-bottom:8px;word-break:break-all}
+.clink small{display:block;color:var(--mu);font-weight:500;font-size:.75rem}
+.arow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.arow .btn{height:50px;font-size:.95rem;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.ftr{text-align:center;color:var(--mu);font-size:.78rem;padding:10px 0}
+.bsel{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--s1);border:1px solid var(--line);border-radius:22px;padding:12px 12px 12px 16px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.bsel-t b{display:block;font-size:.95rem}
+.bsel-t span{white-space:nowrap;font-size:.78rem;color:var(--mu);font-variant-numeric:tabular-nums}
+.dd{appearance:none;-webkit-appearance:none;flex:none;min-width:128px;font:inherit;font-weight:700;font-size:.95rem;color:var(--tx);background:var(--s2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2384a095' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1.5px solid color-mix(in srgb,var(--brand) 45%,transparent);border-radius:15px;padding:12px 38px 12px 14px;cursor:pointer}
+.dd option{background:var(--s1);color:var(--tx)}
+
+.sugg{border:1.5px solid transparent;border-radius:26px;padding:16px;margin:12px 0;background:linear-gradient(var(--s1),var(--s1)) padding-box,linear-gradient(135deg,var(--brand),var(--hc)) border-box}
+.sugg-h{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.spark{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,var(--brand),var(--hc));flex:none}
+.spark svg{width:20px;height:20px;stroke:var(--on);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sugg-h b{display:block;font-size:1.02rem}.sugg-h small{color:var(--mu);font-size:.8rem}
+.oc{background:var(--s2);border-radius:20px;padding:14px;margin-top:8px}
+.oc-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.oc-top b{font-size:1.1rem;letter-spacing:-.02em}
+.oc-top span{display:block;font-size:.8rem;color:var(--mu);margin-top:2px}
+.oc-res{text-align:right}.oc-res b{font-variant-numeric:tabular-nums}
+.dchips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.dchip{padding:6px 12px;border-radius:99px;font-size:.84rem;font-weight:650;background:var(--s1)}
+.dchip.up{color:var(--ok)}.dchip.dn{color:var(--crit)}
+.oc .btn{height:46px;width:100%;font-size:.95rem}.oc .btn.ghost{background:var(--s1);color:var(--tx)}
+.okline{display:flex;gap:10px;align-items:center;font-size:.9rem;color:var(--ok);font-weight:650;background:color-mix(in srgb,var(--ok) 12%,transparent);padding:12px 14px;border-radius:16px}
+.okline svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.toast button{margin-left:12px;font-weight:800;text-decoration:underline}
+.toast.act{pointer-events:auto}
+.mrdline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}
+.mrdline>em{font-style:normal;font-size:.72rem;font-weight:800;letter-spacing:.05em;color:var(--acc);margin-right:2px}
+.chip.m{background:color-mix(in srgb,var(--acc) 15%,var(--s1))}.chip.m b{color:var(--acc)}
+.mrdrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--line)}
+.mrdrow:first-of-type{border-top:0}
+.mrdrow div b{font-size:1rem}.mrdrow div span{display:block;font-size:.78rem;color:var(--mu);margin-top:1px}
+.mrdrow>b{font-size:1.7rem;font-weight:780;letter-spacing:-.03em;color:var(--acc);font-variant-numeric:tabular-nums}
+.adjbar{display:flex;gap:8px;margin:0 0 10px}.adjbar button{flex:1;height:40px;border-radius:14px;background:var(--s2);font-weight:650;font-size:.88rem}.adjbar button:disabled{opacity:.35;cursor:default}
+.mrdnote{font-size:.8rem;color:var(--mu);padding:2px 2px 8px}
+.tgl{display:flex;gap:12px;align-items:center;background:var(--s1);border:1px solid var(--line);border-radius:22px;padding:14px;margin:12px 0;cursor:pointer}
+.tgl input{width:22px;height:22px;accent-color:var(--brand);flex:none}
+.tgl b{display:block;font-size:.95rem}.tgl small{display:block;color:var(--mu);font-size:.8rem;margin-top:2px}
+.cutgrp{font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--mu);margin:14px 4px 8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-l"><button class="icon-btn" onclick="openDrawer()" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="brand"><div class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="9.5" cy="10" r=".6"/><circle cx="14.5" cy="11" r=".6"/><circle cx="11.5" cy="14.5" r=".6"/></svg></div><div><h1>Dough</h1><div class="date" id="today"></div></div></div></div>
+  <button class="icon-btn" onclick="openHistory()" aria-label="History"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"/></svg></button>
+</header>
+
+<div class="bsel"><div class="bsel-t"><b>Batch size</b><span id="bselG"></span></div><select class="dd" id="bseg" aria-label="Batch size" onchange="setBatch(Number(this.value))"></select></div>
+<div class="seg" id="seg" data-a="pan" role="tablist">
+  <span class="thumb"></span>
+  <button role="tab" data-t="pan" aria-selected="true">Pan</button>
+  <button role="tab" data-t="hc" aria-selected="false">Handcrafted</button>
+</div>
+<div class="panel pan" id="panel-pan"><div id="panRows"></div></div>
+<div class="panel hc" id="panel-hc" hidden><div id="hcRows"></div></div>
+
+<div class="bar-wrap"><div class="live" id="live"></div><div class="bar">
+  <button class="btn ghost" id="clearBtn" onclick="clearAll()">Clear</button>
+  <button class="btn primary" id="calcBtn" onclick="calculate()">Calculate</button>
+</div></div>
+
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Menu">
+  <div class="brand"><div class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="9.5" cy="10" r=".6"/><circle cx="14.5" cy="11" r=".6"/><circle cx="11.5" cy="14.5" r=".6"/></svg></div><div><h2>Dough Calculator</h2><div class="ver">Version 1.0.0</div></div></div>
+  <button class="dnav on" onclick="go('home')"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 9h8M8 13h5"/></svg>Calculator</button>
+  <button class="dnav" onclick="go('history')"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"/></svg>History</button>
+  <button class="dnav" onclick="go('mrd')"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>MRD settings</button>
+  <button class="dnav" onclick="go('cut')"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Priority cut-offs</button>
+  <button class="dnav" onclick="go('guide')"><svg viewBox="0 0 24 24"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5zM5 20.5A2.5 2.5 0 0 0 7.5 23H19"/></svg>How to use</button>
+  <button class="dnav" onclick="go('privacy')"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Privacy and data</button>
+  <button class="dnav" onclick="go('about')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>About and contact</button>
+  <div class="dgrow"></div>
+  <button class="dby" onclick="go('about')"><small>Built by</small><b>Md Shahariar Ahmed</b><small>Developer</small></button>
+</aside>
+<div class="sheet" id="sheet" aria-hidden="true">
+  <div class="sheet-head">
+    <button class="back" onclick="closeSheet()" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Back</button>
+    <h2 id="sheetTitle"></h2></div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="sheet-foot"><button class="btn ghost" onclick="closeSheet()">Edit counts</button><button class="icon-btn" onclick="sharePlan()" aria-label="Share plan"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg></button><button class="btn primary" id="pdfBtn" onclick="downloadPDF()"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>Save PDF</button></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+    const BASE_G = 15904;            // one standard Pan batch
+    const HC_BASE_G = 16674;         // one standard Handcrafted batch (half = 8,337 g)
+    let CUR_BASE = BASE_G;
+    const BATCH_OPTIONS = [0.5, 1, 1.5, 2];
+    let UNIT_G = Math.round(BASE_G / 2), BATCH_M = 1, FULL_G = BASE_G, HALF_G = Math.round(BASE_G / 2), ONE_FIVE_G = Math.round(BASE_G * 1.5);
+    function applyBatch(m) {
+      BATCH_M = m;
+      UNIT_G = Math.round(CUR_BASE / 2);   // smallest dough that can be made: 0.5 batch
+      FULL_G = Math.round(CUR_BASE * m);
+      HALF_G = UNIT_G;
+      ONE_FIVE_G = Math.round(FULL_G * 1.5);
+    }
+
+    // Pan and Handcrafted have different batch weights. Call before any group calculation.
+    function setGroup(isHc) { CUR_BASE = isHc ? HC_BASE_G : BASE_G; applyBatch(BATCH_M); }
+
+    // Pan dough sizes (original)
+    const panSizes = [
+      { key:"ppp",   name:"PPP (6\")",        short:"6\"",  weight:142, half:56, full:112 },
+      { key:"small", name:"Small (9\")",       short:"9\"",  weight:255, half:31, full:62  },
+      { key:"med",   name:"Medium (12\")",     short:"12\"", weight:454, half:17, full:35  },
+      { key:"large", name:"Large (14\")",      short:"14\"", weight:624, half:12, full:25  },
+      { key:"bs",    name:"Breadsticks",      short:"BS",   weight:454, half:17, full:35  },
+      { key:"hbs",   name:"Half Breadsticks", short:"HBS",  weight:227, half:35, full:70  }
+    ];
+
+    // Handcrafted dough sizes (separate – never mixed with pan sequences)
+    const hcSizes = [
+      { key:"medhc",   name:"Medium Handcrafted (12\")", short:"12\" HC", weight:397, half:21, full:42 },
+      { key:"largehc", name:"Large Handcrafted (14\")",  short:"14\" HC", weight:539, half:15, full:30 }
+    ];
+
+    // Combined for history / clear helpers
+    const allSizes = [...panSizes, ...hcSizes];
+
+    // ===== MRD (Made, Ready, Discard) print counts =====
+    // One MRD is printed per stack. Max pieces per stack defaults to 6 and can be changed per size in MRD settings.
+    const MRD_DEFAULT = 6, MRD_KEY = "doughMrdCaps";
+    function loadCaps() { try { return JSON.parse(localStorage.getItem(MRD_KEY) || "{}"); } catch (e) { return {}; } }
+    let mrdCaps = loadCaps();
+    const capOf = key => { const v = parseInt(mrdCaps[key]); return v > 0 ? v : MRD_DEFAULT; };
+    const sizeByShort = short => allSizes.find(z => z.short === short);
+    // MRD needed for one batch, size by size
+    function mrdFor(batch) {
+      return batch.map(x => {
+        const cap = capOf(sizeByShort(x.short).key);
+        return { short: x.short, balls: x.balls, cap, mrd: Math.ceil(x.balls / cap) };
+      });
+    }
+    // MRD per batch plus the grand total, size by size
+    function mrdTotals(batches) {
+      const map = {};
+      batches.forEach((b, i) => mrdFor(b).forEach(m => {
+        const t = map[m.short] || (map[m.short] = { short: m.short, cap: m.cap, pcs: 0, mrd: 0, per: batches.map(() => 0) });
+        t.pcs += m.balls; t.mrd += m.mrd; t.per[i] += m.mrd;
+      }));
+      const rows = allSizes.filter(z => map[z.short]).map(z => map[z.short]);
+      return { rows, total: rows.reduce((a, r) => a + r.mrd, 0) };
+    }
+    function saveCaps() {
+      allSizes.forEach(z => {
+        const el = $("mrdcap-" + z.key);
+        if (!el) return;
+        const v = parseInt(el.value);
+        if (v > 0) mrdCaps[z.key] = v; else delete mrdCaps[z.key];
+      });
+      try { localStorage.setItem(MRD_KEY, JSON.stringify(mrdCaps)); } catch (e) {}
+    }
+    function resetCaps() {
+      mrdCaps = {};
+      try { localStorage.removeItem(MRD_KEY); } catch (e) {}
+      openInfo("mrd");
+      toast("Reset to " + MRD_DEFAULT + " per MRD");
+    }
+
+    // ===== Priority cut-offs =====
+    // Make first = stock below c. Priority = stock below w. Defaults 10 and 20.
+    // Optional per-size overrides live in cuts.sz and only apply while cuts.per is on.
+    const CUT_DEF = { c: 10, w: 20 }, CUT_KEY = "doughCutoffs";
+    function loadCuts() {
+      try {
+        const o = JSON.parse(localStorage.getItem(CUT_KEY) || "{}");
+        return { c: o.c > 0 ? o.c : CUT_DEF.c, w: o.w > 0 ? o.w : CUT_DEF.w, per: !!o.per, sz: o.sz && typeof o.sz === "object" ? o.sz : {} };
+      } catch (e) { return { c: CUT_DEF.c, w: CUT_DEF.w, per: false, sz: {} }; }
+    }
+    let cuts = loadCuts();
+    function cutOf(key) {
+      const o = cuts.per && cuts.sz[key] ? cuts.sz[key] : {};
+      const c = o.c > 0 ? o.c : cuts.c;
+      const w = o.w > 0 ? o.w : cuts.w;
+      return { c, w: Math.max(w, c) };
+    }
+    const cutOfShort = short => cutOf(sizeByShort(short).key);
+    // { u: true, c, w } when every given cut-off pair is identical, so labels can show real numbers
+    function cutUni(pairs) {
+      const f = pairs[0] || cutOf(allSizes[0].key);
+      return { u: pairs.every(t => t.c === f.c && t.w === f.w), c: f.c, w: f.w };
+    }
+    const cutStep = (id, label, val, own) => `<div class="fld has"><label for="${id}">${label}</label><div class="step">
+      <button type="button" class="sb" data-for="${id}" data-d="-1" aria-label="Decrease ${label}">−</button>
+      <input type="number" id="${id}" min="1" inputmode="numeric" value="${val}"${own ? ' data-own="1"' : ""}>
+      <button type="button" class="sb" data-for="${id}" data-d="1" aria-label="Increase ${label}">+</button></div></div>`;
+    // changedId: the field the user just edited. A per-size field only becomes its own level once the user edits it.
+    function saveCuts(changedId) {
+      const gc = parseInt($("cut-g-c") && $("cut-g-c").value), gw = parseInt($("cut-g-w") && $("cut-g-w").value);
+      cuts.c = gc > 0 ? gc : CUT_DEF.c;
+      cuts.w = gw > 0 ? gw : CUT_DEF.w;
+      const per = $("cut-per");
+      cuts.per = !!(per && per.checked);
+      const wrap = $("cutPer");
+      if (wrap) wrap.hidden = !cuts.per;
+      allSizes.forEach(z => {
+        const ec = $("cut-" + z.key + "-c"), ew = $("cut-" + z.key + "-w");
+        if (!ec || !ew) return;
+        const o = {};
+        [[ec, "c"], [ew, "w"]].forEach(([el, k]) => {
+          if (changedId === el.id) el.dataset.own = "1";
+          const v = parseInt(el.value);
+          if (el.dataset.own === "1" && v > 0 && v !== cuts[k]) o[k] = v;
+          else {
+            // no level of its own: follow the all-sizes level
+            delete el.dataset.own;
+            if (document.activeElement !== el) el.value = cuts[k];
+          }
+        });
+        if (o.c || o.w) cuts.sz[z.key] = o; else delete cuts.sz[z.key];
+      });
+      try { localStorage.setItem(CUT_KEY, JSON.stringify(cuts)); } catch (e) {}
+    }
+    function resetCuts() {
+      cuts = { c: CUT_DEF.c, w: CUT_DEF.w, per: false, sz: {} };
+      try { localStorage.removeItem(CUT_KEY); } catch (e) {}
+      openInfo("cut");
+      refreshUI();
+      toast("Reset to " + CUT_DEF.c + " and " + CUT_DEF.w);
+    }
+
+    let lastPanResults = [];
+    let lastHcResults = [];
+    let lastPanTotalG = 0;
+    let lastHcTotalG = 0;
+    let lastInputs = {};
+
+    const HIST_KEY = "doughCalcHistory";
+
+    function todayKey() {
+      const d = new Date();
+      return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    }
+
+    function loadHistory() {
+      try {
+        return JSON.parse(localStorage.getItem(HIST_KEY) || "[]");
+      } catch(e) { return []; }
+    }
+
+    function saveToHistory(entry) {
+      let hist = loadHistory();
+      hist = hist.filter(h => h.date !== entry.date);
+      hist.unshift(entry);
+      hist = hist.slice(0, 14);
+      localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+    }
+
+    const $ = id => document.getElementById(id);
+    const TITLES = { results: "Production plan", history: "History", mrd: "MRD settings", cut: "Priority cut-offs", guide: "How to use", privacy: "Privacy and data", about: "About" };
+    function openDrawer() {
+      $("drawer").classList.add("on"); $("scrim").classList.add("on");
+      $("drawer").setAttribute("aria-hidden", "false"); document.body.classList.add("lock");
+    }
+    function closeDrawer() {
+      $("drawer").classList.remove("on"); $("scrim").classList.remove("on");
+      $("drawer").setAttribute("aria-hidden", "true");
+      if (!$("sheet").classList.contains("open")) document.body.classList.remove("lock");
+    }
+    function go(page) {
+      closeDrawer();
+      if (page === "home") return;
+      setTimeout(() => page === "history" ? openHistory() : openInfo(page), 200);
+    }
+    const ORCID = "0009-0003-6480-4817", MAIL = "jobexperience01@gmail.com";
+    function shareApp() {
+      const url = location.href.split("#")[0];
+      if (navigator.share) navigator.share({ title: "Dough Calculator", text: "Plan dough batches fast with Dough Calculator.", url }).catch(() => {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast("Link copied"));
+    }
+    const INFO = {
+      mrd: () => `
+        <div class="info"><h3>Max stack per MRD</h3>
+          <p>One MRD is printed for each stack. Set the most dough boxes you stack at once for each size. Default is <b>${MRD_DEFAULT}</b>. Changes save automatically and apply the next time you calculate.</p></div>
+        <div class="items">${allSizes.map(z => `<div class="size"><div class="size-name">${z.name}</div><div class="fld"><label for="mrdcap-${z.key}">Max per stack</label><div class="step">
+          <button type="button" class="sb" data-for="mrdcap-${z.key}" data-d="-1" aria-label="Decrease">−</button>
+          <input type="number" id="mrdcap-${z.key}" min="1" placeholder="${MRD_DEFAULT}" inputmode="numeric" value="${capOf(z.key)}">
+          <button type="button" class="sb" data-for="mrdcap-${z.key}" data-d="1" aria-label="Increase">+</button></div></div></div>`).join("")}</div>
+        <button class="btn ghost" style="width:100%;margin-top:12px" onclick="resetCaps()">Reset all to ${MRD_DEFAULT}</button>`,
+      cut: () => {
+        const grp = (label, list) => `<div class="cutgrp">${label}</div>` + list.map(z => { const t = cutOf(z.key); return `<div class="size"><div class="size-name">${z.name}</div><div class="pair">${cutStep("cut-" + z.key + "-c", "Make first below", t.c, cuts.sz[z.key] && cuts.sz[z.key].c > 0)}${cutStep("cut-" + z.key + "-w", "Priority below", t.w, cuts.sz[z.key] && cuts.sz[z.key].w > 0)}</div></div>`; }).join("");
+        return `
+        <div class="info"><h3>Priority cut-offs</h3>
+          <p><b>Make first</b> sizes have fewer balls on hand than the first level and lead batch 1. <b>Priority</b> sizes are below the second level and lead the later batches. Defaults are <b>${CUT_DEF.c}</b> and <b>${CUT_DEF.w}</b>. Changes save automatically and apply the next time you calculate.</p></div>
+        <div class="size"><div class="size-name">All sizes</div><div class="pair">${cutStep("cut-g-c", "Make first below", cuts.c)}${cutStep("cut-g-w", "Priority below", cuts.w)}</div></div>
+        <label class="tgl"><input type="checkbox" id="cut-per" ${cuts.per ? "checked" : ""}><span><b>Set a cut-off for each size</b><small>Give every pan size and handcrafted size its own levels</small></span></label>
+        <div id="cutPer" ${cuts.per ? "" : "hidden"}>
+          ${grp("Pan dough", panSizes)}${grp("Handcrafted dough", hcSizes)}
+          <p class="hint">A size that matches the all-sizes level follows it if you change it later.</p>
+        </div>
+        <button class="btn ghost" style="width:100%;margin-top:12px" onclick="resetCuts()">Reset to ${CUT_DEF.c} and ${CUT_DEF.w}</button>`;
+      },
+      guide: () => `
+        <div class="info"><h3>Quick start</h3><ol>
+          <li>Pick the <b>Pan</b> or <b>Handcrafted</b> tab. Each keeps its own counts and batches.</li>
+          <li>For every size, enter the <b>Leftover</b> dough balls you have and the <b>Projected</b> count the day needs.</li>
+          <li>Tap <b>Calculate</b>. You get what to make, grams, and the nearest clean batch size.</li>
+          <li>Open the priority board. Tap <b>Play</b> or a stage chip to see how priority shifts after each batch.</li>
+          <li>Tick each batch as you make it, then <b>Save PDF</b> or share the plan with your team.</li>
+          <li>Check <b>MRD to print</b> under each batch for how many MRDs per size. Change the stack limit in <b>MRD settings</b>.</li>
+        </ol></div>
+        <div class="info"><h3>Reading the priority board</h3>
+          <ul><li><b>Make first</b> means the balls on hand are below the first cut-off (10 by default). These sizes lead batch 1.</li>
+          <li><b>Priority</b> means below the second cut-off (20 by default). They lead the later batches.</li>
+          <li><b>Stocked</b> means at or above the second cut-off. Nothing urgent for that size.</li>
+          <li>Change both levels, or set them per size, in <b>Priority cut-offs</b> in the menu.</li></ul></div>
+        <div class="info"><h3>Tips</h3><ul>
+          <li>Count leftovers before you enter projected numbers, so the plan starts from real stock.</li>
+          <li>A Leftover box turns coral below the Make first cut-off and amber below the Priority cut-off as you type.</li>
+          <li>Use <b>Smart adjust</b> on the plan page to add or cut a few balls so the total lands on a clean batch. Tap Apply and it updates your projected counts. Undo is one tap.</li>
+          <li>Tick batches as you finish them so the board always shows the current situation.</li>
+          <li>History keeps 14 days. Tap a day to reload its counts and compare.</li>
+          <li>Save the PDF and print it for the dough station.</li></ul></div>`,
+      privacy: () => `
+        <div class="info"><h3>Your data stays with you</h3>
+          <p>Dough Calculator runs entirely in your browser. Your counts and plans are never sent to a server.</p>
+          <p>History is saved only on this device for 14 days. Clearing your browser data or switching phones starts a fresh history.</p></div>
+        <div class="info"><h3>What is stored</h3><ul>
+          <li>The leftover and projected counts from your last 14 calculations.</li>
+          <li>Nothing else. There are no accounts, no tracking and no sign-in.</li></ul></div>`,
+      about: () => `
+        <div class="info"><h3>Why Dough Calculator</h3>
+          <p>Stop guessing how much dough to scale. Dough Calculator turns your leftover counts and projected demand into a clear production plan in seconds, right on your phone.</p>
+          <ul><li><b>Smart priority</b>: sizes below your Make first cut-off (10 by default) go first, then below your Priority cut-off (20 by default), shown on a board that shifts after every batch.</li>
+          <li><b>Batch planning</b>: full, half and 1.5 batch options built on a batch size you choose (0.5, 1, 1.5 or 2 times the 15,904 g Pan or 16,674 g Handcrafted standard), with clean-target suggestions.</li>
+          <li><b>Pan and handcrafted</b> dough planned separately, so sequences never mix.</li>
+          <li><b>PDF and share</b>: a printable production sheet and a plan you can send to the team.</li>
+          <li><b>History</b>: your last 14 days, saved on this device.</li></ul></div>
+        <div class="info"><div class="who"><div class="logo">MS</div><div><b>Md Shahariar Ahmed</b><span>Developer</span></div></div>
+          <div class="crow"><span class="chip"><b>EIT</b> APEGS</span><span class="chip"><b>LSS</b> Green Belt</span><span class="chip"><b>M.Eng</b> Industrial Systems Engineering</span><span class="chip"><b>B.Sc</b> Mechanical Engineering</span></div>
+          <p>Designed and built Dough Calculator to make daily dough planning faster, clearer and less wasteful.</p></div>
+        <div class="info"><h3>Contact and feedback</h3>
+          <a class="clink" href="mailto:${MAIL}"><small>Email</small>${MAIL}</a>
+          <a class="clink" href="https://orcid.org/${ORCID}" target="_blank" rel="noopener"><small>ORCID</small>${ORCID}</a>
+          <p>Found a bug or have a feature request? Reach out any time.</p>
+          <div class="arow"><button class="btn ghost" onclick="shareApp()">Share app</button><a class="btn primary" href="mailto:${MAIL}?subject=Dough%20Calculator%20feedback">Send feedback</a></div></div>
+        <div class="ftr">Dough Calculator, version 1.0.0</div>`
+    };
+    function openInfo(kind) {
+      $("sheetBody").innerHTML = INFO[kind]();
+      openSheet(kind, TITLES[kind]);
+    }
+    function showSheet(mode, title) {
+      $("sheetTitle").textContent = title;
+      const sh = $("sheet");
+      sh.dataset.mode = mode;
+      sh.classList.add("open");
+      sh.setAttribute("aria-hidden", "false");
+      document.body.classList.add("lock");
+      $("sheetBody").scrollTop = 0;
+    }
+    function openSheet(mode, title) {
+      showSheet(mode, title);
+      const h = "#" + mode;
+      if (location.hash === h) return;
+      if (location.hash) location.replace(h); else location.hash = h;
+    }
+    function closeSheet() {
+      if (location.hash) history.back(); else hideSheet();
+    }
+    window.addEventListener("hashchange", () => {
+      const m = location.hash.slice(1);
+      if (!m) hideSheet();
+      else if (TITLES[m] && $("sheetBody").innerHTML && !$("sheet").classList.contains("open")) showSheet(m, TITLES[m]);
+    });
+    function hideSheet() {
+      $("sheet").classList.remove("open");
+      $("sheet").setAttribute("aria-hidden", "true");
+      document.body.classList.remove("lock");
+    }
+    function toast(msg) {
+      const t = $("toast");
+      t.textContent = msg;
+      t.classList.remove("act");
+      t.classList.add("show");
+      clearTimeout(toast.t);
+      toast.t = setTimeout(() => t.classList.remove("show"), 1900);
+    }
+    function fmtDate(k) {
+      const [y, m, d] = k.split("-").map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    }
+    const kg = g => ((g || 0) / 1000).toFixed(1) + " kg";
+
+    function openHistory() {
+      const hist = loadHistory();
+      let html;
+      if (!hist.length) {
+        html = `<div class="empty"><b>No saved days yet</b>Calculate once and today's counts are saved here for 14 days.</div>`;
+      } else {
+        html = `<div class="hist">` + hist.map((h, i) => `
+          <button class="hist-row" onclick="loadHistoryDay(${i})">
+            <div><b>${fmtDate(h.date)}</b><span>Tap to reload these counts</span></div>
+            <div class="hist-tot"><em class="pan">Pan ${kg(h.panTotalG)}</em><em class="hc">HC ${kg(h.hcTotalG)}</em></div>
+          </button>`).join("") + `</div>`;
+      }
+      $("sheetBody").innerHTML = html;
+      openSheet("history", "History");
+    }
+
+    function loadHistoryDay(idx) {
+      const hist = loadHistory();
+      if (!hist[idx]) return;
+      const h = hist[idx];
+      resetAdj();
+      allSizes.forEach(s => {
+        $("left-" + s.key).value = h.inputs["left-" + s.key] || "";
+        $("need-" + s.key).value = h.inputs["need-" + s.key] || "";
+      });
+      setBatch(h.batch || 1);
+      calculate();
+    }
+
+    function getVal(id) {
+      const el = document.getElementById(id);
+      if (!el.value || el.value.trim() === "") return 0;
+      return Math.max(0, parseInt(el.value) || 0);
+    }
+
+    function suggestAdjust(need, weight, halfBalls, fullBalls) {
+      if (need <= 0) return null;
+
+      const targets = [
+        { balls: halfBalls, label: "1 Half Batch" },
+        { balls: fullBalls, label: "1 Full Batch" },
+        { balls: fullBalls + halfBalls, label: "1.5 Batch" }
+      ];
+
+      for (let m = 2; m <= 4; m++) {
+        targets.push({ balls: fullBalls * m, label: m + " Full Batches" });
+        targets.push({ balls: fullBalls * m + halfBalls, label: m + " Full + 1 Half" });
+        targets.push({ balls: Math.round(fullBalls * m * 1.5), label: m + " × 1.5 Batch" });
+      }
+
+      let best = null;
+      let bestScore = 9999;
+
+      targets.forEach(t => {
+        if (t.balls <= 0 || t.balls === need) return;
+        const diff = Math.abs(t.balls - need);
+        const pct = (diff / Math.max(t.balls, need)) * 100;
+        if (pct > 20) return;
+
+        const isUp = t.balls > need;
+        const score = pct + (isUp ? 0 : 5);
+
+        if (score < bestScore) {
+          bestScore = score;
+          best = t;
+        }
+      });
+
+      if (!best) return null;
+
+      const extra = best.balls - need;
+      return {
+        from: need,
+        to: best.balls,
+        label: best.label,
+        direction: best.balls > need ? "up" : "down",
+        pct: ((Math.abs(best.balls - need) / Math.max(best.balls, need)) * 100).toFixed(0),
+        extra: extra
+      };
+    }
+
+    function getRecommendation(need, half, full, weight) {
+      if (need <= 0) return { text: "None needed", near: false };
+
+      const neededG = need * weight;
+      const halfLow = HALF_G * 0.82, halfHigh = HALF_G * 1.18;
+      const fullLow = FULL_G * 0.82, fullHigh = FULL_G * 1.18;
+      const oneFiveLow = ONE_FIVE_G * 0.85, oneFiveHigh = ONE_FIVE_G * 1.15;
+
+      if (Math.abs(neededG - HALF_G) < 50) return { text: "Exactly ~1 Half Batch", near: false };
+      if (Math.abs(neededG - FULL_G) < 50) return { text: "Exactly ~1 Full Batch", near: false };
+      if (Math.abs(neededG - ONE_FIVE_G) < 80) return { text: "Exactly ~1.5 Batch", near: false };
+
+      if (neededG >= halfLow && neededG <= halfHigh)
+        return { text: "Near about 1 Half Batch", near: true };
+      if (neededG >= fullLow && neededG <= fullHigh)
+        return { text: "Near about 1 Full Batch", near: true };
+      if (neededG >= oneFiveLow && neededG <= oneFiveHigh)
+        return { text: "Near about 1.5 Batch", near: true };
+
+      if (neededG < HALF_G)
+        return { text: "Less than Half - make 1 Half Batch", near: false };
+
+      if (neededG > HALF_G && neededG < FULL_G) {
+        const distFull = FULL_G - neededG;
+        const distHalf = neededG - HALF_G;
+        if (distFull <= distHalf) return { text: "Near about 1 Full Batch", near: true };
+        return { text: "Near about 1 Half Batch", near: true };
+      }
+
+      const fulls = Math.floor(neededG / FULL_G);
+      const remG = neededG % FULL_G;
+      if (remG < 100) return { text: fulls + " Full Batch" + (fulls > 1 ? "es" : ""), near: false };
+      if (remG <= HALF_G * 0.3) return { text: fulls + " Full (almost exact)", near: true };
+      if (remG <= HALF_G) return { text: fulls + " Full + 1 Half", near: false };
+      return { text: (fulls + 1) + " Full Batch" + (fulls + 1 > 1 ? "es" : ""), near: false };
+    }
+
+    function get15Text(need, half, full, weight) {
+      if (need <= 0) return "—";
+      const neededG = need * weight;
+      if (neededG <= HALF_G) return "1 Half Batch";
+      if (neededG <= FULL_G) return "1 Full Batch";
+      if (neededG <= ONE_FIVE_G) return "1.5 Batch (Full + Half)";
+      const n = Math.ceil(neededG / ONE_FIVE_G);
+      return n + " × 1.5 Batch";
+    }
+
+    // Dough can only be made in whole half-batch steps: 0.5, 1, 1.5, 2 ... batch
+    function unitLabel(u) { return (u / 2) + (u === 2 ? " batch" : " batch"); }
+    function overallBatchRec(totalG) {
+      if (totalG <= 0) return "Nothing to make";
+      const u = Math.max(1, Math.round(totalG / UNIT_G));
+      return "Closest size: " + unitLabel(u) + " = " + (u * UNIT_G).toLocaleString() + " g";
+    }
+
+    function findCleanTotalTarget(totalG) {
+      if (totalG <= 0) return null;
+
+      const halfUnits = Math.round(totalG / UNIT_G);
+      const candidates = [];
+      for (let d = -2; d <= 2; d++) {
+        const units = halfUnits + d;
+        if (units < 1) continue;
+        const targetG = units * UNIT_G;
+        const diff = targetG - totalG;
+        const pct = Math.abs(diff) / totalG * 100;
+        if (pct > 15) continue;
+
+        let label = "";
+        if (units % 2 === 0) {
+          label = (units / 2) + " Full Batch" + (units / 2 > 1 ? "es" : "");
+        } else {
+          const fulls = Math.floor(units / 2);
+          label = fulls + " Full + 1 Half";
+        }
+        if (units % 3 === 0) {
+          label = (units / 3) + " × 1.5 Batch";
+        }
+
+        candidates.push({ targetG, diff, pct, label, units });
+      }
+
+      if (candidates.length === 0) return null;
+
+      candidates.sort((a, b) => {
+        if (Math.abs(a.diff) !== Math.abs(b.diff)) return Math.abs(a.diff) - Math.abs(b.diff);
+        return a.diff - b.diff;
+      });
+
+      return candidates[0];
+    }
+
+    // ===== Zero-waste packing =====
+    // Pan and Handcrafted are packed completely separately (never mixed or converted).
+    // Every batch is filled to its capacity (within TOL grams) by choosing exact ball counts,
+    // so no half-empty batch with "3 pcs of 12in" is left over at the end.
+    const TOL = 30;
+
+    // Pick ball counts (x <= needLeft) whose grams land as close to cap as possible, favouring the
+    // highest-priority sizes first (list is already in priority order).
+    function fitBatch(list, cap) {
+      const n = list.length, maxS = Math.round(cap + TOL);
+      const reach = [];
+      for (let k = 0; k <= n; k++) reach.push(new Uint8Array(maxS + 1));
+      reach[n][0] = 1;
+      for (let k = n - 1; k >= 0; k--) {
+        const w = list[k].weight, xm = Math.min(list[k].needLeft, Math.floor(maxS / w));
+        const nxt = reach[k + 1], cur = reach[k];
+        for (let x = 0; x <= xm; x++) {
+          const off = x * w;
+          for (let t = 0; t + off <= maxS; t++) if (nxt[t]) cur[t + off] = 1;
+        }
+      }
+      let s = -1, bd = 1e9;
+      for (let t = Math.max(0, Math.round(cap - TOL)); t <= maxS; t++) {
+        if (reach[0][t] && Math.abs(t - cap) < bd) { bd = Math.abs(t - cap); s = t; }
+      }
+      if (s < 0) { for (let t = Math.round(cap - TOL) - 1; t > 0; t--) if (reach[0][t]) { s = t; break; } }
+      const xs = new Array(n).fill(0);
+      if (s <= 0) return { xs, g: 0 };
+      let rem = s;
+      for (let k = 0; k < n; k++) {
+        const w = list[k].weight;
+        for (let x = Math.min(list[k].needLeft, Math.floor(rem / w)); x >= 0; x--) {
+          if (reach[k + 1][rem - x * w]) { xs[k] = x; rem -= x * w; break; }
+        }
+      }
+      return { xs, g: s };
+    }
+
+    // Last batch: choose final counts that fill exactly `cap`, changing as few balls as possible
+    // (cuts or adds). Sizes with no need can be added, so the dough is always fully used.
+    function adjustLast(list, cap, tol) {
+      tol = tol || TOL;
+      const n = list.length, maxS = Math.round(cap + tol), minS = Math.max(1, Math.round(cap - tol)), ADD = 14;
+      let cur = new Float64Array(maxS + 1).fill(Infinity); cur[0] = 0;
+      const choice = [];
+      for (let k = 0; k < n; k++) {
+        const it = list[k], w = it.weight, r = it.needLeft;
+        const xm = Math.min(r + ADD, Math.floor(maxS / w));
+        const ch = new Int16Array(maxS + 1), nb = new Float64Array(maxS + 1).fill(Infinity);
+        const cost = x => { const d = x - r; return d > 0 ? d * 1000 + d * Math.min(it.leftover, 300) * 0.5 : -d * 1000 + -d * Math.max(0, 40 - it.leftover); };
+        for (let t = 0; t <= maxS; t++) {
+          if (cur[t] === Infinity) continue;
+          for (let x = 0; x <= xm; x++) {
+            const ns = t + x * w; if (ns > maxS) break;
+            const c = cur[t] + cost(x);
+            if (c < nb[ns]) { nb[ns] = c; ch[ns] = x; }
+          }
+        }
+        choice.push(ch); cur = nb;
+      }
+      let s = -1, bs = Infinity;
+      for (let t = minS; t <= maxS; t++) { const sc = cur[t] + Math.abs(t - cap); if (sc < bs) { bs = sc; s = t; } }
+      if (s < 0 || bs === Infinity) return null;
+      const xs = new Array(n).fill(0); let rem = s;
+      for (let k = n - 1; k >= 0; k--) { xs[k] = choice[k][rem]; rem -= xs[k] * list[k].weight; }
+      return { xs, g: s };
+    }
+
+    function makePool(items) {
+      return items.map(it => ({ short: it.short, name: it.name, key: it.key, weight: it.weight, needLeft: Math.max(0, it.need || 0), leftover: it.leftover || 0 }));
+    }
+    // Split u half-batch units into batches no bigger than the selected batch size; the smaller one goes last.
+    function capsFor(u) { const per = Math.max(1, Math.round(BATCH_M * 2)), c = []; let r = u; while (r > 0) { const k = Math.min(per, r); c.push(k * UNIT_G); r -= k; } return c; }
+
+    // Shared batch loop. caps = planned capacity per batch (null = decide as we go).
+    // adjustLastBatch = true lets the last batch change counts (smart adjust).
+    function runPlan(pool, capFull, caps, adjustLastBatch) {
+      const batches = [], produced = {}, changes = {};
+      const stock = it => (it.leftover || 0) + (produced[it.short] || 0);
+      function prioritySort(list, isFirst) {
+        list.sort((a, b) => {
+          if (isFirst) {
+            const aLow = a.leftover < cutOfShort(a.short).c ? 0 : 1, bLow = b.leftover < cutOfShort(b.short).c ? 0 : 1;
+            if (aLow !== bLow) return aLow - bLow;
+            return a.leftover - b.leftover || b.needLeft - a.needLeft;
+          }
+          const aU = stock(a) < cutOfShort(a.short).w ? 0 : 1, bU = stock(b) < cutOfShort(b.short).w ? 0 : 1;
+          if (aU !== bU) return aU - bU;
+          return stock(a) - stock(b) || b.needLeft - a.needLeft;
+        });
+      }
+      const totalLeft = () => pool.reduce((t, it) => t + it.needLeft * it.weight, 0);
+      let j = 0, used = 0, ok = true;
+      while (pool.some(it => it.needLeft > 0) || (adjustLastBatch && caps && j < caps.length)) {
+        prioritySort(pool, j === 0);
+        const remG = totalLeft();
+        const capJ = caps ? (j < caps.length ? caps[j] : capFull) : capFull;
+        const isLast = caps ? j >= caps.length - 1 : remG <= capFull + TOL;
+        let xs, consume;
+        const addCh = (it, d) => { if (d) changes[it.key || it.short] = (changes[it.key || it.short] || 0) + d; };
+        const solve = (list, cap) => adjustLast(list, cap) || adjustLast(list, cap, 60) || adjustLast(list, cap, 100);
+        if (isLast && adjustLastBatch) {
+          const r = solve(pool, Math.max(1, caps.reduce((a, c) => a + c, 0) - used));
+          if (!r) { ok = false; break; }
+          xs = r.xs; consume = xs.slice();
+          pool.forEach((it, k) => addCh(it, xs[k] - it.needLeft));
+          pool.forEach((it, k) => { it.needLeft = xs[k]; });
+        } else if (isLast) {
+          xs = pool.map(it => it.needLeft); consume = xs.slice();
+        } else {
+          const f = fitBatch(pool, capJ);
+          xs = f.xs; consume = xs.slice();
+          if (adjustLastBatch && Math.abs(f.g - capJ) > TOL) {
+            // this batch cannot be filled from the counts we have: top it up with a few extra pieces
+            const sub = pool.map((it, k) => ({ ...it, needLeft: f.xs[k] }));
+            const r = solve(sub, capJ);
+            if (!r) { ok = false; break; }
+            xs = r.xs;
+            pool.forEach((it, k) => { addCh(it, Math.max(0, xs[k] - f.xs[k])); consume[k] = Math.min(xs[k], f.xs[k]); });
+          }
+        }
+        const batch = [];
+        pool.forEach((it, k) => {
+          if (xs[k] > 0) { batch.push({ short: it.short, balls: xs[k], grams: xs[k] * it.weight }); produced[it.short] = (produced[it.short] || 0) + xs[k]; it.needLeft -= consume[k]; }
+        });
+        if (!batch.length) { if (isLast) break; const it = pool.find(p => p.needLeft > 0); if (!it) break; batch.push({ short: it.short, balls: it.needLeft, grams: it.needLeft * it.weight }); produced[it.short] = (produced[it.short] || 0) + it.needLeft; it.needLeft = 0; }
+        used += batch.reduce((t, x) => t + x.grams, 0);
+        batches.push(batch); j++;
+        if (isLast) break;
+        if (j > 40) break;
+      }
+      return { batches, changes, ok };
+    }
+
+    // Normal packing for the counts entered. If the total sits on a clean half-batch multiple,
+    // every batch is planned to fill exactly (fulls first, a half last if needed).
+    function packIntoBatches(items, capacityUnits) {
+      const pool = makePool(items.filter(it => it.need > 0 && it.weight > 0));
+      const T = pool.reduce((t, it) => t + it.needLeft * it.weight, 0);
+      if (T <= 0) return [];
+      let u = Math.round(T / UNIT_G);
+      if (u < 1 || Math.abs(T - u * UNIT_G) > 60) u = Math.max(1, Math.ceil(T / UNIT_G));
+      return runPlan(pool, FULL_G, capsFor(u), false).batches;
+    }
+
+    // A plan is "clean" when every batch is full and the last is a full or half batch.
+    function isCleanPlan(batches) {
+      if (!batches.length) return true;
+      const g = batches.map(b => b.reduce((t, x) => t + x.grams, 0));
+      for (let i = 0; i < g.length - 1; i++) if (Math.abs(g[i] - FULL_G) > 70) return false;
+      const last = g[g.length - 1], k = Math.round(last / UNIT_G);
+      return k >= 1 && Math.abs(last - k * UNIT_G) <= 70;
+    }
+
+    function processGroup(sizeList) {
+      setGroup(sizeList === hcSizes);
+      const results = [];
+      let totalGrams = 0;
+
+      sizeList.forEach(s => {
+        const leftover = getVal("left-" + s.key);
+        const today = getVal("need-" + s.key);
+        const need = Math.max(0, today - leftover);
+        const grams = need * s.weight;
+        const rec = getRecommendation(need, s.half, s.full, s.weight);
+        const opt15 = get15Text(need, s.half, s.full, s.weight);
+        const adjust = suggestAdjust(need, s.weight, Math.round(s.half * BATCH_M), Math.round(s.full * BATCH_M));
+
+        totalGrams += grams;
+
+        results.push({
+          ...s, leftover, today, need, grams, rec, opt15, adjust
+        });
+      });
+
+      return {
+        results: results.filter(r => r.need > 0 || r.today > 0 || r.leftover > 0),
+        all: results,
+        withNeed: results.filter(r => r.need > 0),
+        totalG: totalGrams
+      };
+    }
+
+    function buildResultCards(results, isHc) {
+      return results.map(r => {
+        let tip = "";
+        if (r.adjust) {
+          tip = r.adjust.extra > 0
+            ? `<div class="tip">Add ${r.adjust.extra} more (to ${r.adjust.to}) to fill ${r.adjust.label}, +${r.adjust.pct}%</div>`
+            : `<div class="tip">Cut ${Math.abs(r.adjust.extra)} (to ${r.adjust.to}) for a clean ${r.adjust.label}, −${r.adjust.pct}%</div>`;
+        }
+        return `<div class="item">
+          <div class="item-top">
+            <div><div class="nm">${r.name}</div><div class="sub"><span>Projected ${r.today}</span><span>Leftover ${r.leftover}</span></div></div>
+            <div class="make"><b>${r.need}</b><span>To make</span></div>
+          </div>
+          <div class="meta"><span class="pill ${r.rec.near ? "near" : ""}">${r.rec.text}</span><span class="g">${r.grams.toLocaleString()} g</span></div>
+          ${tip}
+        </div>`;
+      }).join("");
+    }
+
+    function batchCards(batches, cap, key) {
+      return batches.map((b, i) => {
+        const g = b.reduce((s, x) => s + x.grams, 0);
+        const sz = Math.min(cap, Math.max(1, Math.ceil((g - TOL) / UNIT_G)) * UNIT_G), p = Math.min(100, Math.round(g / sz * 100));
+        const chk = key ? `<button class="bdone" onclick="toggleBatch('${key}',${i})" aria-label="Mark batch ${i + 1} made"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></button>` : "";
+        return `<div class="batch" data-b="${key || ""}${i}">
+          <div class="bhead"><div class="bh" style="flex:1;margin:0"><b>Batch ${i + 1}</b><span>${g.toLocaleString()} of ${sz.toLocaleString()} g (${sz / UNIT_G / 2} batch), ${p}% full</span></div>${chk}</div>
+          <div class="chips" style="margin-top:9px">${b.map(x => `<span class="chip"><b>${x.short}</b>${x.balls} ${x.balls === 1 ? "ball" : "balls"}</span>`).join("")}</div>
+          <div class="mrdline"><em>MRD</em>${mrdFor(b).map(m => `<span class="chip m"><b>${m.short}</b>${m.mrd}</span>`).join("")}</div>
+          <div class="bar2"><i style="width:${p}%"></i></div>
+        </div>`;
+      }).join("");
+    }
+
+    function mrdHtml(batches) {
+      const t = mrdTotals(batches);
+      if (!t.rows.length) return "";
+      return `<details open><summary>MRD to print <em>${t.total} total</em></summary>
+        <div class="mrdnote">Total across all ${batches.length} ${batches.length === 1 ? "batch" : "batches"}. Each batch's MRD are listed on its card above.</div>
+        ${t.rows.map(r => `<div class="mrdrow"><div><b>${r.short}</b><span>${r.pcs} pcs, ${r.cap} per MRD</span></div><b>${r.mrd}</b></div>`).join("")}
+      </details>`;
+    }
+
+    function buildSequenceHtml(withNeed, isHc) {
+      if (withNeed.length === 0) return "";
+      const sorted = withNeed.slice().sort((a, b) => {
+        const aLow = a.leftover < cutOfShort(a.short).c ? 0 : 1;
+        const bLow = b.leftover < cutOfShort(b.short).c ? 0 : 1;
+        if (aLow !== bLow) return aLow - bLow;
+        return a.leftover - b.leftover || a.need - b.need;
+      });
+      const single = packIntoBatches(sorted, 1.0);
+      const key = isHc ? "hc" : "pan";
+      return boardHtml(key, withNeed, single) + "<!--SEQ-->" + `<div class="seq">
+        <h3>Batches</h3>
+        <p class="hint">${(() => { const t = cutUni(withNeed.map(r => cutOf(r.key))); return t.u ? `Sizes with under ${t.c} leftover go first. Later batches favor sizes under ${t.w}.` : "Sizes below their Make first level go first. Later batches favor sizes below their Priority level."; })()}</p>
+        <details open><summary>Make list <em id="bp-${isHc ? "hc" : "pan"}">0 of ${single.length} made</em></summary>${batchCards(single, FULL_G, isHc ? "hc" : "pan")}</details>
+        ${mrdHtml(single)}
+      </div>`;
+    }
+
+    function typeSection(label, cls, d, isHc) {
+      setGroup(isHc);
+      if (!d.results.length) return "";
+      const ct = findCleanTotalTarget(d.totalG);
+      let target = "";
+      if (ct && Math.abs(ct.diff) > 50) {
+        const act = ct.diff < 0 ? `Reduce by ${Math.abs(ct.diff).toLocaleString()} g` : `Add ${ct.diff.toLocaleString()} g`;
+        target = `<div class="target"><div><b>Clean target: ${ct.targetG.toLocaleString()} g</b><span>${ct.label}</span></div><em>${act}</em></div>`;
+      }
+      const seqParts = buildSequenceHtml(d.withNeed, isHc).split("<!--SEQ-->");
+      return `<section class="type ${cls}">
+        <h2><i></i>${label}</h2>
+        <div class="hero">
+          <div class="hero-k">Production required</div>
+          <div class="hero-v">${d.totalG.toLocaleString()}<small> g</small></div>
+          <div class="hero-s">${(d.totalG / FULL_G).toFixed(2)} batches of ${FULL_G.toLocaleString()} g. ${overallBatchRec(d.totalG)}.</div>
+          ${tanks(d.totalG)}
+        </div>
+        ${suggestHtml(isHc ? "hc" : "pan", d)}
+        ${seqParts[0]}
+        <div class="items">${buildResultCards(d.results, isHc)}</div>
+        ${seqParts[1] || ""}
+      </section>`;
+    }
+
+    const suggs = {};
+
+    // Smart adjust: "cut the coat to fit the cloth". For the nearest full/half batch totals below and
+    // above, fill every batch exactly and change as few balls as possible in the last batch
+    // (cut a few pieces, or add a few) so the last batch is exactly full or exactly half. No dough is left over.
+    function buildSuggestions(d) {
+      const total = d.totalG, out = [];
+      if (total <= 0) return out;
+      const us = new Set([Math.ceil(total / UNIT_G), Math.floor(total / UNIT_G)]);
+      [...us].filter(u => u >= 1).forEach(u => {
+        const pool = makePool(d.all.map(z => ({ short: z.short, key: z.key, name: z.name, weight: z.weight, need: z.need, leftover: z.leftover })));
+        const run = runPlan(pool, FULL_G, capsFor(u), true);
+        if (!run.ok) return;
+        const changes = d.all.map(z => ({ key: z.key, short: z.short, delta: run.changes[z.key] || 0 })).filter(c => c.delta);
+        if (!changes.length) return;
+        const nChg = changes.reduce((t, c) => t + Math.abs(c.delta), 0);
+        if (nChg > 40) return;
+        const gotG = total + changes.reduce((t, c) => t + c.delta * d.all.find(z => z.key === c.key).weight, 0);
+        // verify: re-pack the adjusted counts the way the plan page will
+        const sim = d.all.map(z => { const c = changes.find(x => x.key === z.key); return { ...z, need: Math.max(0, z.need + (c ? c.delta : 0)) }; }).filter(z => z.need > 0);
+        const verified = isCleanPlan(packIntoBatches(sim, 1.0));
+        out.push({ dir: gotG > total ? 1 : -1, changes, gotG, off: Math.round(Math.abs(gotG - u * UNIT_G)), batches: u / 2, units: u, targetG: u * UNIT_G, verified, nChg });
+      });
+      out.sort((a, b) => (b.verified - a.verified) || (a.nChg - b.nChg));
+      return out;
+    }
+
+    const adjHist = { undo: [], redo: [] };
+    function resetAdj() { adjHist.undo = []; adjHist.redo = []; }
+    const snapNeeds = () => { const o = {}; allSizes.forEach(z => o[z.key] = $("need-" + z.key).value); return o; };
+    const setNeeds = o => Object.keys(o).forEach(k => $("need-" + k).value = o[k]);
+    function rerenderPlan() {
+      refreshUI();
+      const st = $("sheetBody").scrollTop;
+      calculate();
+      $("sheetBody").scrollTop = st;
+    }
+    function adjBar() {
+      if (!adjHist.undo.length && !adjHist.redo.length) return "";
+      return `<div class="adjbar"><button type="button" onclick="undoAdjust()" ${adjHist.undo.length ? "" : "disabled"}>↶ Undo</button><button type="button" onclick="redoAdjust()" ${adjHist.redo.length ? "" : "disabled"}>↷ Redo</button></div>`;
+    }
+
+    function suggestHtml(key, d) {
+      setGroup(key === "hc");
+      const head = `<div class="sugg-h"><span class="spark"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></span><div><b>Smart adjust</b><small>Cut or add a few pieces so no dough is wasted</small></div></div>`;
+      const bar = adjBar();
+      const cleanNow = isCleanPlan(packIntoBatches(d.withNeed, 1.0)) && Math.abs(d.totalG - Math.round(d.totalG / UNIT_G) * UNIT_G) <= 70;
+      if (cleanNow) {
+        suggs[key] = [];
+        return `<div class="sugg">${head}${bar}<div class="okline"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Already a clean batch. No dough left over.</div></div>`;
+      }
+      const list = suggs[key] = buildSuggestions(d);
+      if (!list.length) return bar ? `<div class="sugg">${head}${bar}</div>` : "";
+      return `<div class="sugg">${head}${bar}${list.map((s, i) => {
+        const adds = s.changes.filter(c => c.delta > 0).reduce((a, c) => a + c.delta, 0);
+        const cuts = -s.changes.filter(c => c.delta < 0).reduce((a, c) => a + c.delta, 0);
+        const title = adds && cuts ? `Cut ${cuts} and add ${adds}` : adds ? `Add ${adds} ${adds === 1 ? "ball" : "balls"}` : `Cut ${cuts} ${cuts === 1 ? "ball" : "balls"}`;
+        return `
+        <div class="oc">
+          <div class="oc-top">
+            <div><b>${title}</b><span>${i === 0 ? "Closest. " : ""}${s.dir > 0 ? "Add dough, make" : "Cut dough, make"} ${s.batches} batch = ${s.targetG.toLocaleString()} g${s.verified ? "" : " (closest fit)"}</span></div>
+            <div class="oc-res"><b>${Math.round(s.gotG).toLocaleString()} g</b><span>${s.off ? "within " + s.off.toLocaleString() + " g" : "exact"}</span></div>
+          </div>
+          <div class="dchips">${s.changes.map(c => `<span class="dchip ${c.delta > 0 ? "up" : "dn"}">${c.delta > 0 ? "+" : "−"}${Math.abs(c.delta)} ${c.short}</span>`).join("")}</div>
+          <button class="btn ${i ? "ghost" : "primary"}" onclick="applySuggestion('${key}',${i})">Apply and recalculate</button>
+        </div>`; }).join("")}</div>`;
+    }
+
+    function applySuggestion(key, i) {
+      const s = (suggs[key] || [])[i];
+      if (!s) return;
+      const before = snapNeeds();
+      s.changes.forEach(c => {
+        const left = getVal("left-" + c.key), need = Math.max(0, getVal("need-" + c.key) - left);
+        $("need-" + c.key).value = (left + Math.max(0, need + c.delta)) || "";
+      });
+      adjHist.undo.push({ before, after: snapNeeds() });
+      adjHist.redo = [];
+      rerenderPlan();
+      toastAction("Projected counts adjusted", "Undo", undoAdjust);
+    }
+    function undoAdjust() {
+      const h = adjHist.undo.pop();
+      if (!h) return;
+      setNeeds(h.before); adjHist.redo.push(h); rerenderPlan();
+    }
+    function redoAdjust() {
+      const h = adjHist.redo.pop();
+      if (!h) return;
+      setNeeds(h.after); adjHist.undo.push(h); rerenderPlan();
+    }
+    function toastAction(msg, label, fn) {
+      const t = $("toast");
+      t.innerHTML = `${msg}<button type="button">${label}</button>`;
+      t.querySelector("button").onclick = () => { fn(); t.classList.remove("show", "act"); };
+      t.classList.add("show", "act");
+      clearTimeout(toast.t);
+      toast.t = setTimeout(() => t.classList.remove("show", "act"), 6000);
+    }
+
+    const boards = {}, doneN = { pan: 0, hc: 0 };
+    let lastTotals = { pan: 0, hc: 0 };
+    const ROW = 58;
+
+    function tanks(totalG) {
+      const n = Math.min(8, Math.max(1, Math.ceil(totalG / FULL_G - 0.0001)));
+      return `<div class="tanks">` + Array.from({ length: n }, (_, i) => {
+        const f = Math.min(1, Math.max(0, (totalG - i * FULL_G) / FULL_G));
+        return `<div class="tank"><i style="--f:${(f * 100).toFixed(0)}%"></i><span>${Math.round(f * 100)}%</span></div>`;
+      }).join("") + `</div>`;
+    }
+
+    function boardHtml(key, withNeed, batches) {
+      const rows = withNeed.map(r => ({ short: r.short, name: r.name, stocks: [r.leftover], ...cutOfShort(r.short) }));
+      const prod = {};
+      batches.forEach(b => {
+        b.forEach(x => prod[x.short] = (prod[x.short] || 0) + x.balls);
+        rows.forEach(rw => rw.stocks.push(rw.stocks[0] + (prod[rw.short] || 0)));
+      });
+      const max = Math.ceil(Math.max(30, ...rows.flatMap(r => r.stocks), ...rows.map(r => r.w + 10)) / 10) * 10;
+      const uni = cutUni(rows);
+      boards[key] = { rows, batches, max, stage: 0, timer: null };
+      const pc = v => (v / max * 100).toFixed(2) + "%";
+      const stages = ["Now", ...batches.map((_, i) => "After batch " + (i + 1))];
+      return `<div class="board" id="board-${key}">
+        <div class="board-top">
+          <div><div class="stage-t" id="st-${key}"></div><div class="stage-s" id="ss-${key}"></div></div>
+          <button class="play" onclick="playBoard('${key}')"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>Play</button>
+        </div>
+        <div class="scale"><div>${uni.u ? `<span class="s10" style="left:${pc(uni.c)}">${uni.c}</span><span class="s20" style="left:${pc(uni.w)}">${uni.w}</span>` : ""}</div><div></div></div>
+        <div class="prows" style="height:${rows.length * ROW}px">${rows.map((r, i) => `
+          <div class="prow" data-i="${i}">
+            <div class="pt"><span class="pl">${r.name}</span><span class="pb"></span></div>
+            <div class="pm"><div class="ptrack"><i class="tick a" style="left:${pc(r.c)}"></i><i class="tick b" style="left:${pc(r.w)}"></i><b class="fill"></b></div><span class="pv"></span></div>
+          </div>`).join("")}</div>
+        <div class="stagechips">${stages.map((s, i) => `<button data-k="${i}" onclick="setStage('${key}',${i})">${s}</button>`).join("")}</div>
+        <div class="nextmake" id="nm-${key}"></div>
+      </div>`;
+    }
+
+    function updateBoard(key, stage) {
+      const B = boards[key];
+      if (!B) return;
+      B.stage = stage;
+      const n = B.batches.length;
+      const root = $("board-" + key);
+      const uni = cutUni(B.rows);
+      const order = B.rows.map((r, i) => ({ i, s: r.stocks[stage], c: r.c, w: r.w })).sort((a, b) => {
+        const au = a.s < a.c ? 0 : 1, bu = b.s < b.c ? 0 : 1;
+        return au - bu || a.s - b.s || a.i - b.i;
+      });
+      let crit = 0, warn = 0;
+      order.forEach((o, rank) => {
+        const el = root.querySelector(`.prow[data-i="${o.i}"]`);
+        const z = o.s < o.c ? "z-c" : o.s < o.w ? "z-w" : "z-ok";
+        if (z === "z-c") crit++; else if (z === "z-w") warn++;
+        el.className = "prow " + z;
+        el.style.transform = `translateY(${rank * ROW}px)`;
+        el.querySelector(".fill").style.width = Math.min(100, o.s / B.max * 100) + "%";
+        el.querySelector(".pv").textContent = o.s;
+        el.querySelector(".pb").textContent = z === "z-c" ? "Make first" : z === "z-w" ? "Priority" : "Stocked";
+      });
+      $("st-" + key).textContent = stage === 0 ? "Right now" : "After batch " + stage;
+      $("ss-" + key).textContent = stage >= n ? "All batches made. Every size is at the projected count."
+        : crit ? `${crit} ${crit > 1 ? "sizes are" : "size is"} ${uni.u ? "under " + uni.c : "below the Make first level"}. Batch ${stage + 1} starts with ${crit > 1 ? "them" : "it"}.`
+        : warn ? `Nothing urgent. ${warn} ${warn > 1 ? "sizes" : "size"} ${uni.u ? "under " + uni.w : "below the Priority level"} lead batch ${stage + 1}.`
+        : (uni.u ? `Every size is at ${uni.w} or more.` : "Every size is stocked.");
+      root.querySelectorAll(".stagechips button").forEach(b => b.classList.toggle("on", Number(b.dataset.k) === stage));
+      $("nm-" + key).innerHTML = stage >= n ? "" : `<b>Batch ${stage + 1} makes</b>` + B.batches[stage].map(x => `<span class="chip"><b>${x.short}</b>${x.balls}</span>`).join("");
+    }
+
+    function setStage(key, k) { clearInterval(boards[key].timer); updateBoard(key, k); }
+    function playBoard(key) {
+      const B = boards[key];
+      clearInterval(B.timer);
+      let k = 0;
+      updateBoard(key, 0);
+      B.timer = setInterval(() => {
+        k++;
+        if (k > B.batches.length) { clearInterval(B.timer); return; }
+        updateBoard(key, k);
+      }, 1700);
+    }
+    function toggleBatch(key, i) {
+      const B = boards[key];
+      doneN[key] = i < doneN[key] ? i : i + 1;
+      document.querySelectorAll(`.batch[data-b^="${key}"]`).forEach(el => {
+        const idx = Number(el.dataset.b.slice(key.length));
+        el.classList.toggle("done", idx < doneN[key]);
+      });
+      $("bp-" + key).textContent = `${doneN[key]} of ${B.batches.length} made`;
+      setStage(key, doneN[key]);
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    function sharePlan() {
+      const lines = ["Dough plan, " + new Date().toLocaleDateString(), "Batch size: " + BATCH_M + "x (Pan " + Math.round(BASE_G * BATCH_M).toLocaleString() + " g, HC " + Math.round(HC_BASE_G * BATCH_M).toLocaleString() + " g)"];
+      [["pan", "Pan"], ["hc", "Handcrafted"]].forEach(([k, label]) => {
+        const B = boards[k];
+        if (!B) return;
+        lines.push("", label + ": " + (lastTotals[k] / 1000).toFixed(2) + " kg");
+        B.batches.forEach((b, i) => lines.push("Batch " + (i + 1) + ": " + b.map(x => x.short + " x" + x.balls).join(", ") + " | MRD " + mrdFor(b).map(m => m.short + " x" + m.mrd).join(", ")));
+        const mt = mrdTotals(B.batches);
+        lines.push("MRD total (" + mt.total + "): " + mt.rows.map(r => r.short + " x" + r.mrd).join(", "));
+      });
+      const text = lines.join("\n");
+      if (navigator.share) navigator.share({ title: "Dough plan", text }).catch(() => {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("Plan copied"));
+    }
+
+    function calculate() {
+      const pan = processGroup(panSizes);
+      const hc = processGroup(hcSizes);
+
+      lastPanResults = pan.results;
+      lastHcResults = hc.results;
+      lastPanTotalG = pan.totalG;
+      lastHcTotalG = hc.totalG;
+
+      if (!pan.results.length && !hc.results.length) {
+        toast("Enter at least one count");
+        return;
+      }
+
+      const inputs = {};
+      allSizes.forEach(s => {
+        inputs["left-" + s.key] = $("left-" + s.key).value;
+        inputs["need-" + s.key] = $("need-" + s.key).value;
+      });
+      lastInputs = inputs;
+      saveToHistory({ date: todayKey(), panTotalG: pan.totalG, hcTotalG: hc.totalG, inputs, batch: BATCH_M });
+
+      Object.keys(boards).forEach(k => { clearInterval(boards[k].timer); delete boards[k]; });
+      doneN.pan = doneN.hc = 0;
+      lastTotals = { pan: pan.totalG, hc: hc.totalG };
+      let html = "";
+      html += typeSection("Pan dough", "pan", pan, false) + typeSection("Handcrafted dough", "hc", hc, true);
+      $("sheetBody").innerHTML = html;
+      Object.keys(boards).forEach(k => updateBoard(k, 0));
+      openSheet("results", "Production plan");
+    }
+
+    function clearAll() {
+      resetAdj();
+      allSizes.forEach(s => {
+        $("left-" + s.key).value = "";
+        $("need-" + s.key).value = "";
+      });
+      lastPanResults = [];
+      lastHcResults = [];
+      lastPanTotalG = 0;
+      lastHcTotalG = 0;
+      refreshUI();
+      closeSheet();
+    }
+
+    function setBatch(m) {
+      applyBatch(m);
+      $("bseg").value = String(m);
+      $("bselG").textContent = "Pan " + Math.round(BASE_G * m).toLocaleString() + " g, HC " + Math.round(HC_BASE_G * m).toLocaleString() + " g per batch";
+      refreshUI();
+    }
+
+    function refreshUI() {
+      document.querySelectorAll(".fld").forEach(f => {
+        f.classList.toggle("has", (parseInt(f.querySelector("input").value) || 0) > 0);
+      });
+      document.querySelectorAll('input[id^="left-"]').forEach(inp => {
+        const f = inp.closest(".fld"), v = inp.value === "" ? null : parseInt(inp.value);
+        const t = cutOf(inp.id.slice(5));
+        f.classList.toggle("lowc", v !== null && v < t.c);
+        f.classList.toggle("loww", v !== null && v >= t.c && v < t.w);
+      });
+      const tot = list => list.reduce((s, z) => s + Math.max(0, getVal("need-" + z.key) - getVal("left-" + z.key)) * z.weight, 0);
+      const pg = tot(panSizes), hg = tot(hcSizes);
+      const chip = (n, g, c) => g > 0 ? `<span style="--c:${c}">${n} <b>${(g / 1000).toFixed(2)} kg</b> ${(g / (c.includes("hc") ? HC_BASE_G : BASE_G) / BATCH_M).toFixed(2)} batch</span>` : "";
+      $("live").innerHTML = chip("Pan", pg, "var(--pan)") + chip("Handcrafted", hg, "var(--hc)");
+      $("live").classList.toggle("on", pg + hg > 0);
+      const any = list => list.some(s => getVal("left-" + s.key) > 0 || getVal("need-" + s.key) > 0);
+      document.querySelector('[data-t="pan"]').classList.toggle("dot", any(panSizes));
+      document.querySelector('[data-t="hc"]').classList.toggle("dot", any(hcSizes));
+    }
+
+    /**
+     * Draws ONE combined priority bar graph into a jsPDF document, but with two
+     * clearly separated areas inside it — a PAN section and a HANDCRAFTED section.
+     * Each section keeps its own row numbering (1, 2, 3...) since production
+     * sequences for pan and handcrafted dough are made independently.
+     *
+     * @param {jsPDF} doc      - the jsPDF document instance
+     * @param {number} startY  - y position (mm) to start drawing at
+     * @param {Array} panItems - pan items, each { short, leftover, need, grams }
+     * @param {Array} hcItems  - handcrafted items, same shape
+     * @param {number} pageWidth - full page width in mm
+     * @param {number} margin - page margin in mm (used for left/right box edges)
+     * @returns {number} new y position after the graph
+     */
+    function drawCombinedPriorityGraph(doc, startY, panItems, hcItems, pageWidth, margin) {
+      const pan = panItems || [];
+      const hc = hcItems || [];
+      if (pan.length === 0 && hc.length === 0) return startY;
+
+      const boxX = margin;
+      const boxW = pageWidth - margin * 2;
+      const rowH = 6.5;
+
+      // Compute total box height: title + subtitle + (section label + rows) x2 + gap + legend
+      const sectionGap = (pan.length > 0 && hc.length > 0) ? 3.5 : 0;
+      let boxH = 5 + 4 + 3; // top pad + title + subtitle
+      if (pan.length > 0) boxH += 5 + pan.length * rowH;
+      boxH += sectionGap;
+      if (hc.length > 0) boxH += 5 + hc.length * rowH;
+      boxH += 7; // legend + bottom pad
+
+      let y = startY;
+
+      // Outer box
+      doc.setDrawColor(100, 100, 100);
+      doc.setLineWidth(0.4);
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(boxX, y, boxW, boxH, 2, 2, "FD");
+
+      let iy = y + 5;
+
+      // Title
+      doc.setFontSize(9);
+      doc.setTextColor(40);
+      doc.setFont(undefined, "bold");
+      doc.text("Priority order (make first to last)", boxX + 3, iy);
+      iy += 3.5;
+
+      // Subtitle
+      doc.setFontSize(6);
+      doc.setTextColor(120);
+      doc.setFont(undefined, "normal");
+      const cu = cutUni([...pan, ...hc].map(r => cutOfShort(r.short)));
+      doc.text((cu.u ? "Red = leftover < " + cu.c + " (urgent)" : "Red = leftover below its Make first level (urgent)") + "  |  Longer bar = more leftover (lower priority)", boxX + 3, iy);
+      iy += 4.5;
+
+      const maxLeft = Math.max(...pan.map(r => r.leftover), ...hc.map(r => r.leftover), 10);
+      const labelW = 24;
+      const chartLeft = boxX + 3 + labelW;
+      const chartW = boxW - labelW - 55;
+
+      function drawSectionRows(items, sectionLabel, sectionColor) {
+        // Section divider label
+        doc.setFontSize(7);
+        doc.setTextColor(sectionColor[0], sectionColor[1], sectionColor[2]);
+        doc.setFont(undefined, "bold");
+        doc.text(sectionLabel, boxX + 3, iy);
+        // thin divider line to the right of the label
+        doc.setDrawColor(sectionColor[0], sectionColor[1], sectionColor[2]);
+        doc.setLineWidth(0.3);
+        doc.line(boxX + 3 + doc.getTextWidth(sectionLabel) + 2, iy - 1.2, boxX + boxW - 3, iy - 1.2);
+        iy += 4;
+
+        items.forEach((r, idx) => {
+          const barW = Math.max(2, (r.leftover / maxLeft) * chartW);
+
+          const rt = cutOfShort(r.short);
+          if (r.leftover < rt.c) {
+            doc.setFillColor(244, 67, 54);
+          } else if (r.leftover < rt.w) {
+            doc.setFillColor(255, 152, 0);
+          } else {
+            doc.setFillColor(66, 165, 245);
+          }
+          doc.roundedRect(chartLeft, iy, barW, 4.5, 1, 1, "F");
+
+          doc.setFontSize(7);
+          doc.setTextColor(40);
+          doc.setFont(undefined, "bold");
+          doc.text(r.short, boxX + 3, iy + 3.3);
+
+          doc.setFont(undefined, "normal");
+          doc.setFontSize(6);
+          doc.setTextColor(60);
+          const valX = Math.min(chartLeft + barW + 2, boxX + boxW - 48);
+          doc.text("Left " + r.leftover + " | Need " + r.need + " | " + r.grams.toLocaleString() + "g", valX, iy + 3.3);
+
+          iy += rowH;
+        });
+      }
+
+      if (pan.length > 0) drawSectionRows(pan, "PAN DOUGH", [255, 107, 53]);
+      if (pan.length > 0 && hc.length > 0) iy += 3.5; // clear gap so HC label isn't crowded against Pan's bars
+      if (hc.length > 0) drawSectionRows(hc, "HANDCRAFTED DOUGH", [46, 125, 50]);
+
+      // Legend
+      iy += 1;
+      doc.setFillColor(244, 67, 54); doc.rect(boxX + 3, iy, 3.5, 3, "F");
+      doc.setFontSize(6); doc.setTextColor(60);
+      doc.text(cu.u ? "Urgent (<" + cu.c + " left)" : "Urgent (Make first)", boxX + 8, iy + 2.4);
+
+      doc.setFillColor(255, 152, 0); doc.rect(boxX + 48, iy, 3.5, 3, "F");
+      doc.text(cu.u ? "Watch (<" + cu.w + " left)" : "Watch (Priority)", boxX + 53, iy + 2.4);
+
+      doc.setFillColor(66, 165, 245); doc.rect(boxX + 95, iy, 3.5, 3, "F");
+      doc.text(cu.u ? "OK (" + cu.w + "+ left)" : "OK (Stocked)", boxX + 100, iy + 2.4);
+
+      return y + boxH + 3;
+    }
+
+    function downloadPDF() {
+      if ((!lastPanResults || lastPanResults.length === 0) && (!lastHcResults || lastHcResults.length === 0)) return;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const MARGIN = 25.4; // 1 inch on every side
+      const W = doc.internal.pageSize.getWidth();
+      const H = doc.internal.pageSize.getHeight();
+      const now = new Date();
+      let y = MARGIN;
+
+      // Header
+      doc.setFontSize(13);
+      doc.setTextColor(255, 107, 53);
+      doc.setFont(undefined, "bold");
+      doc.text("Dough Production Sheet", W / 2, y, { align: "center" });
+      y += 5;
+      doc.setFontSize(7);
+      doc.setTextColor(100);
+      doc.setFont(undefined, "normal");
+      doc.text(now.toLocaleDateString() + " " + now.toLocaleTimeString() + "  |  Batch size " + BATCH_M + "x = Pan " + Math.round(BASE_G * BATCH_M).toLocaleString() + " g / HC " + Math.round(HC_BASE_G * BATCH_M).toLocaleString() + " g  |  Pan and HC planned separately", W / 2, y, { align: "center" });
+      y += 6;
+
+      const adjText = r => !r.adjust ? "—" : (r.adjust.extra > 0 ? "Add " + r.adjust.extra + " to " + r.adjust.to : "Cut " + Math.abs(r.adjust.extra) + " to " + r.adjust.to);
+      function drawTable(list, tag, color) {
+        doc.autoTable({
+          startY: y,
+          head: [["Type","Size","Today","Left","Need","Grams","Recommendation","Adjust"]],
+          body: list.map(r => [tag, r.short, String(r.today), String(r.leftover), String(r.need), r.grams.toLocaleString() + "g", r.rec.text, adjText(r)]),
+          theme: "grid",
+          styles: { fontSize: 6.3, cellPadding: 1.1, overflow: "linebreak", valign: "middle" },
+          headStyles: { fillColor: color, textColor: 255, fontStyle: "bold", fontSize: 6.3 },
+          columnStyles: { 0: { cellWidth: 12 }, 1: { cellWidth: 17 }, 2: { cellWidth: 11 }, 3: { cellWidth: 10 }, 4: { cellWidth: 11 }, 5: { cellWidth: 17 }, 6: { cellWidth: 45 }, 7: { cellWidth: 36.2 } },
+          margin: { left: MARGIN, right: MARGIN, top: MARGIN, bottom: MARGIN }
+        });
+        y = doc.lastAutoTable.finalY + 3;
+      }
+
+      // Helper to draw a total bar (kept separate per type since totals are distinct)
+      function drawTotalBox(totalG, label, rgb) {
+        if (totalG <= 0) return;
+        const cleanT = findCleanTotalTarget(totalG);
+        doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+        doc.roundedRect(MARGIN, y, W - MARGIN * 2, 11, 1.5, 1.5, "F");
+        doc.setTextColor(255);
+        doc.setFontSize(8);
+        doc.setFont(undefined, "bold");
+        let totalLine = label + ": " + totalG.toLocaleString() + " g  =  " + (totalG / FULL_G).toFixed(2) + " Full  |  " + overallBatchRec(totalG);
+        doc.text(totalLine, W / 2, y + 4.5, { align: "center" });
+        if (cleanT && Math.abs(cleanT.diff) > 50) {
+          const act = cleanT.diff < 0 ? "Reduce " + Math.abs(cleanT.diff).toLocaleString() + " g" : "Add " + cleanT.diff.toLocaleString() + " g";
+          doc.setFontSize(7);
+          doc.setTextColor(255, 224, 210);
+          doc.text("CLEAN TARGET: " + cleanT.targetG.toLocaleString() + " g (" + cleanT.label + ") - " + act, W / 2, y + 9, { align: "center" });
+        }
+        y += 12;
+      }
+
+
+      // ===== ONE combined priority graph, with separate Pan / HC areas inside =====
+      const panWithNeed = lastPanResults.filter(r => r.need > 0).slice().sort((a, b) => {
+        const aLow = a.leftover < cutOfShort(a.short).c ? 0 : 1;
+        const bLow = b.leftover < cutOfShort(b.short).c ? 0 : 1;
+        if (aLow !== bLow) return aLow - bLow;
+        return a.leftover - b.leftover || a.need - b.need;
+      });
+      const hcWithNeed = lastHcResults.filter(r => r.need > 0).slice().sort((a, b) => {
+        const aLow = a.leftover < cutOfShort(a.short).c ? 0 : 1;
+        const bLow = b.leftover < cutOfShort(b.short).c ? 0 : 1;
+        if (aLow !== bLow) return aLow - bLow;
+        return a.leftover - b.leftover || a.need - b.need;
+      });
+
+
+      // One batch sequence per group, built on the batch size picked in the app (FULL_G), plus MRD counts
+      function drawSequences(withNeed, sectionTitle, headColor) {
+        if (withNeed.length === 0) return;
+
+        const batches = packIntoBatches(withNeed, 1.0); // 1.0 = the selected batch size
+        const t = mrdTotals(batches);
+        const tableW = W - MARGIN * 2;
+
+        if (y > H - MARGIN - 45) { doc.addPage(); y = MARGIN; }
+        doc.setFontSize(9);
+        doc.setTextColor(headColor[0], headColor[1], headColor[2]);
+        doc.setFont(undefined, "bold");
+        doc.text(sectionTitle + " — Production Sequence (" + BATCH_M + "x batch, ~" + FULL_G.toLocaleString() + " g each)", MARGIN, y);
+        y += 2.5;
+
+        const rows = batches.map((batch, idx) => {
+          const g = batch.reduce((sum, i) => sum + i.grams, 0);
+          return [
+            "B" + (idx + 1),
+            batch.map(i => i.short + " " + i.balls + " Qty").join("  +  "),
+            g.toLocaleString() + " g",
+            mrdFor(batch).map(m => m.short + " x" + m.mrd).join("  +  ")
+          ];
+        });
+        doc.autoTable({
+          startY: y,
+          head: [["#", "Sizes", "Grams", "MRD to print"]],
+          body: rows,
+          theme: "grid",
+          styles: { fontSize: 6.3, cellPadding: 1, overflow: "linebreak" },
+          headStyles: { fillColor: headColor, textColor: 255, fontSize: 6.3 },
+          columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: tableW - 10 - 20 - 55 }, 2: { cellWidth: 20 }, 3: { cellWidth: 55 } },
+          margin: { left: MARGIN, right: MARGIN, top: MARGIN, bottom: MARGIN }
+        });
+        y = doc.lastAutoTable.finalY + 4;
+
+        // MRD matrix: size x batch, then total
+        if (y > H - MARGIN - 40) { doc.addPage(); y = MARGIN; }
+        doc.setFontSize(8);
+        doc.setTextColor(headColor[0], headColor[1], headColor[2]);
+        doc.setFont(undefined, "bold");
+        doc.text(sectionTitle + " — MRD count after each batch and total", MARGIN, y);
+        y += 2.5;
+
+        const perBatchTotals = batches.map((_, i) => t.rows.reduce((sum, r) => sum + r.per[i], 0));
+        doc.autoTable({
+          startY: y,
+          head: [["Size", "Per MRD", "Pcs"].concat(batches.map((_, i) => "B" + (i + 1)), ["Total MRD"])],
+          body: t.rows.map(r => [r.short, String(r.cap), String(r.pcs)].concat(r.per.map(v => v ? String(v) : "-"), [String(r.mrd)])),
+          foot: [["TOTAL", "", ""].concat(perBatchTotals.map(String), [String(t.total)])],
+          theme: "grid",
+          styles: { fontSize: 6.3, cellPadding: 1, halign: "center" },
+          headStyles: { fillColor: headColor, textColor: 255, fontSize: 6.3, halign: "center" },
+          footStyles: { fillColor: [235, 235, 235], textColor: 20, fontStyle: "bold", fontSize: 6.8, halign: "center" },
+          columnStyles: { 0: { halign: "left", fontStyle: "bold", cellWidth: 18 } },
+          margin: { left: MARGIN, right: MARGIN, top: MARGIN, bottom: MARGIN },
+          didParseCell: function(data) {
+            if (data.section === "body" && data.column.index === data.table.columns.length - 1) data.cell.styles.fontStyle = "bold";
+          }
+        });
+        y = doc.lastAutoTable.finalY + 5;
+      }
+
+      // Pan and Handcrafted are fully separate sections: own table, total, priority graph and batches
+      function drawGroup(list, withNeed, tag, title, color, total, isHc) {
+        if (!list.length) return;
+        setGroup(isHc);
+        if (y > H - MARGIN - 60) { doc.addPage(); y = MARGIN; }
+        doc.setFontSize(10); doc.setTextColor(color[0], color[1], color[2]); doc.setFont(undefined, "bold");
+        doc.text(title + " DOUGH", MARGIN, y); y += 2.5;
+        drawTable(list, tag, color);
+        drawTotalBox(total, tag + " TOTAL", isHc ? [27, 94, 32] : [26, 35, 126]);
+        if (withNeed.length) {
+          if (y > H - MARGIN - (25 + withNeed.length * 6.5)) { doc.addPage(); y = MARGIN; }
+          y = drawCombinedPriorityGraph(doc, y, isHc ? [] : withNeed, isHc ? withNeed : [], W, MARGIN) + 3;
+        }
+        drawSequences(withNeed, title.toUpperCase(), color);
+        y += 4;
+      }
+      drawGroup(lastPanResults, panWithNeed, "Pan", "Pan", [255, 107, 53], lastPanTotalG, false);
+      drawGroup(lastHcResults, hcWithNeed, "HC", "Handcrafted", [46, 125, 50], lastHcTotalG, true);
+
+      // Footer — kept inside the 1-inch bottom margin
+      const footerBlockH = 4;
+      let footerY = Math.min(y, H - MARGIN - footerBlockH);
+      doc.setFontSize(6);
+      doc.setTextColor(150);
+      doc.text("Dough Calculator  |  Pan and HC are separate, never mixed  |  History on device", W / 2, footerY, { align: "center" });
+      footerY += 3;
+
+
+      doc.save("Dough-Production-" + now.toISOString().slice(0,10) + ".pdf");
+    }
+
+    function stepper(id, label) {
+      return `<div class="fld"><label for="${id}">${label}</label><div class="step">
+        <button type="button" class="sb" data-for="${id}" data-d="-1" aria-label="Decrease ${label}">−</button>
+        <input type="number" id="${id}" min="0" placeholder="0" inputmode="numeric">
+        <button type="button" class="sb" data-for="${id}" data-d="1" aria-label="Increase ${label}">+</button>
+      </div></div>`;
+    }
+    const rowsHtml = list => list.map(s => `<div class="size"><div class="size-name">${s.name}</div><div class="pair">${stepper("left-" + s.key, "Leftover")}${stepper("need-" + s.key, "Projected")}</div></div>`).join("");
+    $("panRows").innerHTML = rowsHtml(panSizes);
+    $("hcRows").innerHTML = rowsHtml(hcSizes);
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    $("bseg").innerHTML = BATCH_OPTIONS.map(m => `<option value="${m}">${m} ${m === 1 ? "batch (default)" : "batches"}</option>`).join("");
+    setBatch(1);
+    $("today").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+    document.addEventListener("click", e => {
+      const b = e.target.closest(".sb");
+      if (!b) return;
+      const inp = $(b.dataset.for);
+      const isCap = b.dataset.for.startsWith("mrdcap-"), isCut = b.dataset.for.startsWith("cut-");
+      if (!isCap && !isCut) resetAdj();
+      const v = Math.max(isCap || isCut ? 1 : 0, (parseInt(inp.value) || 0) + Number(b.dataset.d));
+      inp.value = v || "";
+      if (isCap) saveCaps();
+      if (isCut) saveCuts(b.dataset.for);
+      refreshUI();
+      if (navigator.vibrate) navigator.vibrate(6);
+    });
+    document.addEventListener("input", e => { const id = e.target.id || ""; if (id.startsWith("mrdcap-")) saveCaps(); else if (id.startsWith("cut-")) saveCuts(id); else resetAdj(); refreshUI(); });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") { if ($("drawer").classList.contains("on")) closeDrawer(); else closeSheet(); }
+      if (e.key === "Enter" && e.target.tagName === "INPUT" && !(e.target.id || "").startsWith("mrdcap-") && !(e.target.id || "").startsWith("cut-")) calculate();
+    });
+    let tx = null;
+    $("drawer").addEventListener("touchstart", e => tx = e.touches[0].clientX, { passive: true });
+    $("drawer").addEventListener("touchend", e => { if (tx !== null && tx - e.changedTouches[0].clientX > 60) closeDrawer(); tx = null; });
+    $("seg").addEventListener("click", e => {
+      const b = e.target.closest("button[data-t]");
+      if (!b) return;
+      const t = b.dataset.t;
+      $("seg").dataset.a = t;
+      $("seg").querySelectorAll("button").forEach(x => x.setAttribute("aria-selected", x === b));
+      $("panel-pan").hidden = t !== "pan";
+      $("panel-hc").hidden = t !== "hc";
+    });
+  </script>
+</body>
+</html>
